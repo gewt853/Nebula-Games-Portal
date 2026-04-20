@@ -1,0 +1,44 @@
+[
+  {
+    "id": "2048",
+    "title": "2048",
+    "developer": "Gabriele Cirulli",
+    "genre": "Puzzle",
+    "url": "https://play2048.co/"
+  },
+  {
+    "id": "hextris",
+    "title": "Hextris",
+    "developer": "Logan Engstrom & Noah Moroze",
+    "genre": "Action",
+    "url": "https://hextris.io/"
+  },
+  {
+    "id": "asteroids",
+    "title": "Asteroids",
+    "developer": "Classic",
+    "genre": "Arcade",
+    "url": "https://freeasteroids.org/"
+  },
+  {
+    "id": "pacman",
+    "title": "Pac-Man",
+    "developer": "Namco",
+    "genre": "Arcade",
+    "url": "https://freepacman.org/"
+  },
+  {
+    "id": "scratch-geometry-dash",
+    "title": "Geometry Dash",
+    "developer": "RobTop",
+    "genre": "Platformer",
+    "url": "https://turbowarp.org/105500895/embed"
+  },
+  {
+    "id": "scratch-fnaf",
+    "title": "FNAF",
+    "developer": "Scott Cawthon",
+    "genre": "Horror",
+    "url": "https://turbowarp.org/16830504/embed"
+  }
+]
