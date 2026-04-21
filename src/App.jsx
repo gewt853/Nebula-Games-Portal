@@ -111,7 +111,8 @@ export default function App() {
                 src={activeGame.url} 
                 className="w-full h-full bg-slate-950 block border-0"
                 title={activeGame.title}
-                sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-pointer-lock"
+                sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-pointer-lock allow-popups-to-escape-sandbox allow-downloads allow-storage-access-by-user-activation allow-modals"
+                allow="accelerometer *; ambient-light-sensor *; autoplay *; camera *; clipboard-read *; clipboard-write *; encrypted-media *; fullscreen *; geolocation *; gyroscope *; local-network-access *; magnetometer *; microphone *; midi *; payment *; picture-in-picture *; screen-wake-lock *; speaker *; sync-xhr *; usb *; vibrate *; vr *; web-share *"
                 allowFullScreen
               />
             </div>

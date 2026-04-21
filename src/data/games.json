@@ -1,1 +1,86 @@
-[]
+[
+  {
+    "id": "totm",
+    "title": "Tomb of the Mask",
+    "developer": "Playgendary",
+    "genre": "Arcade",
+    "url": "https://map-l.github.io/play/totm/"
+  },
+  {
+    "id": "basket-random",
+    "title": "Basket Random",
+    "developer": "Two Player Games",
+    "genre": "Sports",
+    "url": "https://files.twoplayergames.org/files/games/other/Basket_Random/index.html"
+  },
+  {
+    "id": "cookie-clicker",
+    "title": "Cookie Clicker",
+    "developer": "Orteil",
+    "genre": "Idle",
+    "url": "https://pizzaedition.win/assets/allgames/cookieclicker/index.html"
+  },
+  {
+    "id": "retro-bowl-college",
+    "title": "Retro Bowl College",
+    "developer": "New Star Games",
+    "genre": "Sports",
+    "url": "https://pizzaedition.win/assets/allgames/retrobowlcollege/index.html"
+  },
+  {
+    "id": "block-blast",
+    "title": "Block Blast",
+    "developer": "Hungry Studio",
+    "genre": "Puzzle",
+    "url": "https://pizzaedition.win/assets/allgames/blockblast/index.html"
+  },
+  {
+    "id": "drift-boss",
+    "title": "Drift Boss",
+    "developer": "MarketJS",
+    "genre": "Racing",
+    "url": "https://pizzaedition.win/assets/allgames/driftboss/index.html"
+  },
+  {
+    "id": "level-devil",
+    "title": "Level Devil",
+    "developer": "Unearthed Games",
+    "genre": "Platformer",
+    "url": "https://pizzaedition.win/assets/allgames/leveldevil/index.html"
+  },
+  {
+    "id": "stacktris",
+    "title": "Stacktris",
+    "developer": "Martin Magni",
+    "genre": "Puzzle",
+    "url": "https://pizzaedition.win/assets/allgames/stacktris/index.html"
+  },
+  {
+    "id": "monkey-mart",
+    "title": "Monkey Mart",
+    "developer": "TinyDobbins",
+    "genre": "Simulation",
+    "url": "https://pizzaedition.win/assets/allgames/monkeymart/index.html"
+  },
+  {
+    "id": "moto-x3m",
+    "title": "Moto X3M",
+    "developer": "MadPuffers",
+    "genre": "Racing",
+    "url": "https://pizzaedition.win/assets/allgames/moto-x3m/index.html"
+  },
+  {
+    "id": "cluster-rush",
+    "title": "Cluster Rush",
+    "developer": "Landfall Games",
+    "genre": "Arcade",
+    "url": "https://pizzaedition.win/assets/allgames/ClusterRush/index.html"
+  },
+  {
+    "id": "five-nights-at-epsteins",
+    "title": "Five Nights at Epsteins",
+    "developer": "Unknown",
+    "genre": "Horror",
+    "url": "https://cdn.vietdp.com/file/vietdp-games/games/t12026/five-nights-at-epsteins/index.html"
+  }
+]
