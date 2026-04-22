@@ -1,1 +1,20 @@
-[]
+[
+  {
+    "id": "titanium-network",
+    "name": "Titanium Network",
+    "url": "https://vox-invicta.neocities.org/",
+    "description": "Powerful unblocked web access node."
+  },
+  {
+    "id": "doge-unblocker-v5",
+    "name": "Doge Unblocker v5",
+    "url": "https://doge-unblocker-v5.vercel.app/",
+    "description": "Modern and fast unblocking service with a futuristic UI."
+  },
+  {
+    "id": "rammerhead-direct",
+    "name": "Rammerhead",
+    "url": "https://frittledsocool.bostoncareercounselor.com/",
+    "description": "A high-performance proxy node for unblocked browsing."
+  }
+]
