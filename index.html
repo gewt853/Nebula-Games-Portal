@@ -8,11 +8,25 @@
   </head>
   <body>
     <div id="root">
-      <div style="background:#020617;color:#4f46e5;height:100vh;display:flex;align-items:center;justify-center;font-family:sans-serif;font-weight:900;text-transform:uppercase;letter-spacing:0.2em;">
-        <div style="margin:auto;">Loading Portal...</div>
+      <div id="portal-status" style="background:#020617;color:#ef4444;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:sans-serif;text-align:center;padding:20px;">
+        <h1 style="font-weight:900;text-transform:uppercase;letter-spacing:0.2em;margin-bottom:10px;">Portal Offline</h1>
+        <p style="color:#94a3b8;max-width:500px;line-height:1.6;font-size:14px;">
+          The browser is loading the raw source code instead of the built version. 
+          <br><br>
+          <strong style="color:#6366f1;">Fix:</strong> Go to Repository Settings > Pages and change Source to "GitHub Actions".
+        </p>
       </div>
     </div>
     <script type="module" src="/src/main.jsx"></script>
+    <script>
+      // Clear the error message if the script actually loads
+      window.addEventListener('load', () => {
+        const root = document.getElementById('root');
+        if (root && root.innerHTML.includes('Portal Offline')) {
+           console.log('App is mounting...');
+        }
+      });
+    </script>
   </body>
 </html>
 
