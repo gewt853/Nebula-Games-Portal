@@ -16,9 +16,9 @@ permissions:
   id-token: write
 
 # Allow one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
-# However, do NOT cancel in-progress runs as it can leave the Pages API in a stuck state.
+# Use a specific group name to ensure we only lock our own deployment process.
 concurrency:
-  group: "pages"
+  group: "github-pages-deployment-${{ github.ref }}"
   cancel-in-progress: false
 
 jobs:
@@ -28,6 +28,10 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
