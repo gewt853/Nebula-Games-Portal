@@ -117,5 +117,12 @@
     "developer": "JustPlay.LOL",
     "genre": "Shooter",
     "url": "https://db.duckmath.org/html/1v1lol/index.html"
+  },
+  {
+    "id": "suika-watermelon",
+    "title": "Watermelon Game",
+    "developer": "Aladdin X",
+    "genre": "Puzzle",
+    "url": "https://playsuikagame.com/"
   }
 ]

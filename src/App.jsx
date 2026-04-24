@@ -244,6 +244,8 @@ export default function App() {
                   src={activeItem.url} 
                   className="w-full h-full bg-slate-950 block border-0"
                   title={activeItem.title || activeItem.name}
+                  scrolling="no"
+                  frameBorder="0"
                   sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-pointer-lock allow-popups-to-escape-sandbox allow-downloads allow-storage-access-by-user-activation allow-modals"
                   allow="accelerometer *; ambient-light-sensor *; autoplay *; camera *; clipboard-read *; clipboard-write *; encrypted-media *; fullscreen *; geolocation *; gyroscope *; local-network-access *; magnetometer *; microphone *; midi *; payment *; picture-in-picture *; screen-wake-lock *; speaker *; sync-xhr *; usb *; vibrate *; vr *; web-share *"
                   allowFullScreen
