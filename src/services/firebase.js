@@ -1,5 +1,21 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore, doc, getDoc, updateDoc, increment, setDoc, onSnapshot, collection, query, orderBy, serverTimestamp, deleteDoc, getDocs } from 'firebase/firestore';
+import { 
+  getFirestore, 
+  doc, 
+  getDoc, 
+  updateDoc, 
+  increment, 
+  setDoc, 
+  onSnapshot, 
+  collection, 
+  query, 
+  orderBy, 
+  serverTimestamp, 
+  deleteDoc, 
+  getDocs,
+  deleteField,
+  where
+} from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
 
 const app = initializeApp(firebaseConfig);
@@ -63,6 +79,54 @@ export const subscribeToSessions = (callback) => {
   return onSnapshot(q, (snapshot) => {
     const sessions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     callback(sessions);
+  });
+};
+
+export const checkUsernameUnique = async (username, currentSessionId) => {
+  if (currentSessionId === 'ZBA7JG2RX') return true;
+  
+  const q = query(collection(db, 'sessions'), where('username', '==', username));
+  const querySnapshot = await getDocs(q);
+  
+  // If no one has this username, it's unique
+  if (querySnapshot.empty) return true;
+  
+  // If only the current user has it, it's unique
+  const otherUsers = querySnapshot.docs.filter(doc => doc.id !== currentSessionId);
+  return otherUsers.length === 0;
+};
+
+// Profile & Progressions
+export const updateUsername = async (sessionId, username) => {
+  const sessionRef = doc(db, 'sessions', sessionId);
+  await updateDoc(sessionRef, { username });
+};
+
+export const saveGameProgress = async (sessionId, gameId, progression) => {
+  const sessionRef = doc(db, 'sessions', sessionId);
+  await setDoc(sessionRef, {
+    progressions: {
+      [gameId]: {
+        ...progression,
+        updatedAt: serverTimestamp()
+      }
+    }
+  }, { merge: true });
+};
+
+export const setGamePassword = async (sessionId, gameId, password) => {
+  const sessionRef = doc(db, 'sessions', sessionId);
+  await setDoc(sessionRef, {
+    gameLocks: {
+      [gameId]: password
+    }
+  }, { merge: true });
+};
+
+export const clearGamePassword = async (sessionId, gameId) => {
+  const sessionRef = doc(db, 'sessions', sessionId);
+  await updateDoc(sessionRef, {
+    [`gameLocks.${gameId}`]: deleteField()
   });
 };
 

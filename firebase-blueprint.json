@@ -20,7 +20,15 @@
         "lastActive": { "type": "string", "format": "date-time" },
         "userAgent": { "type": "string" },
         "isOnline": { "type": "boolean" },
-        "username": { "type": "string" }
+        "username": { "type": "string" },
+        "progressions": {
+          "type": "object",
+          "description": "Store state for games, keyed by game ID."
+        },
+        "gameLocks": {
+          "type": "object",
+          "description": "Password protection for specific games, keyed by game ID."
+        }
       },
       "required": ["lastActive", "isOnline"]
     },

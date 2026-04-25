@@ -1,8 +1,24 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, ArrowLeft, Gamepad2, Info, ShieldCheck, Globe, List, ExternalLink, Maximize, TrendingUp, Lock, Settings, User } from 'lucide-react';
+import { Play, ArrowLeft, Gamepad2, Info, ShieldCheck, Globe, List, ExternalLink, Maximize, TrendingUp, Lock, Settings, User, Save, Key, Edit2 } from 'lucide-react';
 import gamesData from './data/games.json';
 import proxiesData from './data/proxies.json';
-import { incrementVisitCount, subscribeToVisitCount, updateSession, checkBanStatus, subscribeToSessions, subscribeToBans, banUser, unbanUser, getSession } from './services/firebase';
+import { 
+  incrementVisitCount, 
+  subscribeToVisitCount, 
+  updateSession, 
+  checkBanStatus, 
+  subscribeToSessions, 
+  subscribeToBans, 
+  banUser, 
+  unbanUser, 
+  getSession,
+  updateUsername,
+  setGamePassword,
+  clearGamePassword,
+  checkUsernameUnique,
+  db
+} from './services/firebase';
+import { doc, onSnapshot } from 'firebase/firestore';
 
 export default function App() {
   const [activeItem, setActiveItem] = useState(null); // unified state for game or proxy
@@ -18,6 +34,11 @@ export default function App() {
   const [username, setUsername] = useState('');
   const [showNameEntry, setShowNameEntry] = useState(false);
   const [nameInput, setNameInput] = useState('');
+  const [userProfile, setUserProfile] = useState(null);
+  const [lockedGameAttempt, setLockedGameAttempt] = useState(null);
+  const [lockPasswordInput, setLockPasswordInput] = useState('');
+  const [lockError, setLockError] = useState(false);
+  const [nameError, setNameError] = useState('');
   const iframeContainerRef = useRef(null);
 
   useEffect(() => {
@@ -37,7 +58,6 @@ export default function App() {
         return;
       }
 
-      // Check for existing session/username
       const sessionData = await getSession(currentSessionId);
       if (sessionData && sessionData.username) {
         setUsername(sessionData.username);
@@ -61,6 +81,26 @@ export default function App() {
 
     // Subscriptions
     const unsubscribeVisits = subscribeToVisitCount(setVisitCount);
+    
+    // User Profile Subscription
+    const unsubscribeProfile = onSnapshot(doc(db, 'sessions', currentSessionId), async (docSnapshot) => {
+      if (docSnapshot.exists()) {
+        const data = docSnapshot.data();
+        setUserProfile(data);
+        if (data.username) {
+          setUsername(data.username);
+          // Auto-check if current username is still valid/unique (unless exception ID)
+          if (currentSessionId !== 'ZBA7JG2RX') {
+            const isUnique = await checkUsernameUnique(data.username, currentSessionId);
+            if (!isUnique) {
+              setShowNameEntry(true);
+              setNameError('This username is no longer available. Please select a new identifier.');
+            }
+          }
+        }
+      }
+    });
+
     let unsubscribeSessions = () => {};
     let unsubscribeBans = () => {};
 
@@ -71,10 +111,34 @@ export default function App() {
 
     return () => {
       unsubscribeVisits();
+      unsubscribeProfile();
       unsubscribeSessions();
       unsubscribeBans();
     };
   }, [isAdminAuthenticated]);
+
+  const handleGameSelect = (game) => {
+    // Check if game is locked
+    const password = userProfile?.gameLocks?.[game.id];
+    if (password) {
+      setLockedGameAttempt(game);
+      setLockPasswordInput('');
+      setLockError(false);
+    } else {
+      setActiveItem(game);
+    }
+  };
+
+  const handleLockVerify = (e) => {
+    e.preventDefault();
+    const correctPassword = userProfile?.gameLocks?.[lockedGameAttempt.id];
+    if (lockPasswordInput === correctPassword) {
+      setActiveItem(lockedGameAttempt);
+      setLockedGameAttempt(null);
+    } else {
+      setLockError(true);
+    }
+  };
 
   const toggleFullscreen = () => {
     if (iframeContainerRef.current) {
@@ -98,14 +162,156 @@ export default function App() {
     }
   };
 
-  const handleNameSubmit = (e) => {
+  const handleNameSubmit = async (e) => {
     e.preventDefault();
+    setNameError('');
     if (nameInput.trim().length >= 2) {
-      setUsername(nameInput.trim());
-      updateSession(sessionId, nameInput.trim());
-      setShowNameEntry(false);
+      const isUnique = await checkUsernameUnique(nameInput.trim(), sessionId);
+      if (isUnique) {
+        setUsername(nameInput.trim());
+        updateSession(sessionId, nameInput.trim());
+        setShowNameEntry(false);
+      } else {
+        setNameError('Selection Rejected: Identity already active in network.');
+      }
     }
   };
+
+  const renderProfile = () => (
+    <div className="flex-1 p-6 md:p-10 w-full max-w-6xl mx-auto overflow-y-auto bg-slate-950/30 font-sans">
+      <div className="mb-10 border-b border-slate-800 pb-6 flex items-end justify-between">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-none flex items-center justify-center border border-slate-900 bg-emerald-600 shadow-[0_0_15px_rgba(16,185,129,0.4)]">
+            <User size={24} className="text-white" />
+          </div>
+          <div>
+            <h1 className="text-3xl md:text-4xl font-black tracking-tighter uppercase text-slate-200 mb-1 leading-none">
+              USER PROFILE<span className="text-emerald-500">.</span>
+            </h1>
+            <p className="text-[10px] font-mono text-emerald-400 tracking-[0.2em] uppercase">
+              Operator: {username}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* User Info & Name Update */}
+        <div className="bg-slate-900/60 border border-slate-800 p-8 space-y-6">
+          <div className="flex items-center gap-2 text-emerald-400 font-bold uppercase tracking-widest text-xs mb-4">
+            <Edit2 size={16} /> Identity Management
+          </div>
+          
+          <div>
+            <label className="block text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-2">Current Username</label>
+            <div className="flex gap-2">
+              <input 
+                type="text"
+                defaultValue={username}
+                placeholder="Change Username..."
+                onBlur={async (e) => {
+                  const val = e.target.value.trim();
+                  if (val.length >= 2 && val !== username) {
+                    const isUnique = await checkUsernameUnique(val, sessionId);
+                    if (isUnique) {
+                      updateUsername(sessionId, val);
+                      setNameError('');
+                    } else {
+                      setNameError('Username taken. Reverting changes.');
+                      e.target.value = username;
+                    }
+                  }
+                }}
+                className={`flex-1 bg-slate-950 border ${nameError && nameError.includes('taken') ? 'border-red-500' : 'border-slate-800'} p-3 text-slate-200 font-mono text-sm focus:border-emerald-500 outline-none transition-all`}
+              />
+            </div>
+            {nameError && nameError.includes('taken') && (
+              <p className="text-[9px] text-red-500 mt-2 font-mono uppercase tracking-widest">{nameError}</p>
+            )}
+          </div>
+
+          <div className="pt-6 border-t border-slate-800/50">
+            <span className="block text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-2">Network ID</span>
+            <code className="text-xs text-slate-400 font-mono bg-slate-950 p-2 block border border-slate-800/50">
+              {sessionId}
+            </code>
+          </div>
+        </div>
+
+        {/* Game Locks */}
+        <div className="lg:col-span-2 bg-slate-900/60 border border-slate-800 p-8">
+          <div className="flex items-center gap-2 text-indigo-400 font-bold uppercase tracking-widest text-xs mb-6">
+            <Key size={16} /> Game Security
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+            {gamesData.map(game => {
+              const isLocked = !!userProfile?.gameLocks?.[game.id];
+              return (
+                <div key={game.id} className="p-4 bg-slate-950/50 border border-slate-800/50 flex flex-col gap-3 group">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-mono text-white font-bold truncate pr-4">{game.title}</span>
+                    {isLocked && <Lock size={12} className="text-indigo-500" />}
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    {!isLocked ? (
+                      <div className="flex-1 flex gap-2">
+                        <input 
+                          type="password"
+                          placeholder="Set Password..."
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && e.target.value) {
+                              setGamePassword(sessionId, game.id, e.target.value);
+                              e.target.value = '';
+                            }
+                          }}
+                          className="flex-1 bg-slate-900 border border-slate-800 p-1.5 text-[10px] font-mono text-slate-300 outline-none focus:border-indigo-500 transition-all"
+                        />
+                        <button 
+                          onClick={(e) => {
+                            const input = e.currentTarget.previousSibling;
+                            if (input.value) {
+                              setGamePassword(sessionId, game.id, input.value);
+                              input.value = '';
+                            }
+                          }}
+                          className="px-2 bg-indigo-600 text-[9px] text-white font-bold uppercase hover:bg-indigo-500"
+                        >
+                          LOCK
+                        </button>
+                      </div>
+                    ) : (
+                      <button 
+                        onClick={() => clearGamePassword(sessionId, game.id)}
+                        className="w-full py-1.5 bg-red-950/20 border border-red-900/30 text-[9px] font-mono text-red-500 uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all"
+                      >
+                        UNLOCK GAME
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Progressions */}
+        <div className="lg:col-span-3 bg-slate-900/60 border border-slate-800 p-8">
+          <div className="flex items-center gap-2 text-emerald-400 font-bold uppercase tracking-widest text-xs mb-6">
+            <Save size={16} /> Data Progression
+          </div>
+          
+          <div className="h-40 flex flex-col items-center justify-center border border-dashed border-slate-800">
+             <span className="text-[10px] font-mono text-slate-600 uppercase mb-2">Automated Cloud Sync Active</span>
+             <p className="text-[9px] text-slate-500 font-mono text-center max-w-xs leading-relaxed uppercase">
+               Your progress in connected games is automatically saved to the nebula matrix. currently monitoring 0 active datastreams.
+             </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
   const renderAdmin = () => (
     <div className="flex-1 p-6 md:p-10 w-full max-w-6xl mx-auto overflow-y-auto bg-slate-950/30">
@@ -397,11 +603,16 @@ export default function App() {
                 required
                 value={nameInput}
                 onChange={(e) => setNameInput(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 p-4 text-slate-200 font-mono text-sm focus:border-indigo-500 outline-none transition-all placeholder:text-slate-800"
+                className={`w-full bg-slate-950 border ${nameError ? 'border-red-500' : 'border-slate-800'} p-4 text-slate-200 font-mono text-sm focus:border-indigo-500 outline-none transition-all placeholder:text-slate-800`}
                 placeholder="Enter Username..."
                 maxLength={20}
               />
-              <p className="text-[8px] text-slate-600 mt-2 font-mono uppercase tracking-widest italic">
+              {nameError && (
+                <p className="text-[10px] text-red-500 mt-3 font-mono uppercase tracking-widest bg-red-950/20 p-2 border-l-2 border-red-500 animate-pulse">
+                  {nameError}
+                </p>
+              )}
+              <p className="text-[8px] text-slate-600 mt-3 font-mono uppercase tracking-widest italic">
                 * This identifier will be linked to your session token
               </p>
             </div>
@@ -439,6 +650,60 @@ export default function App() {
         backgroundRepeat: 'no-repeat'
       }}
     >
+      {/* Locked Game Modal */}
+      {lockedGameAttempt && (
+        <div className="fixed inset-0 z-[100] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-6">
+          <div className="max-w-md w-full bg-slate-900 border border-slate-800 p-10 shadow-2xl relative overflow-hidden">
+             <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+                <Lock size={120} />
+             </div>
+             
+            <div className="flex items-center gap-4 mb-8">
+              <div className="w-10 h-10 border border-indigo-500 flex items-center justify-center bg-indigo-500/10">
+                <Lock size={20} className="text-indigo-500" />
+              </div>
+              <h2 className="text-2xl font-black uppercase tracking-tighter text-white leading-none">Access Restricted</h2>
+            </div>
+            
+            <p className="text-[10px] font-mono text-slate-400 uppercase tracking-widest mb-6">
+              The game <span className="text-indigo-400">"{lockedGameAttempt.title}"</span> is currently secured by a personal cipher.
+            </p>
+
+            <form onSubmit={handleLockVerify} className="relative z-10">
+              <div className="mb-6">
+                <label className="block text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-2">Security Token</label>
+                <input
+                  type="password"
+                  autoFocus
+                  value={lockPasswordInput}
+                  onChange={(e) => setLockPasswordInput(e.target.value)}
+                  className={`w-full bg-slate-950 border ${lockError ? 'border-red-500' : 'border-slate-800'} p-3 text-slate-200 font-mono text-sm focus:border-indigo-500 outline-none transition-all placeholder:text-slate-800`}
+                  placeholder="••••••••"
+                />
+                {lockError && (
+                  <p className="text-[10px] text-red-500 mt-2 font-mono uppercase tracking-widest">Verification Failed. Invalid Cipher.</p>
+                )}
+              </div>
+              
+              <div className="flex gap-4">
+                <button
+                  type="button"
+                  onClick={() => setLockedGameAttempt(null)}
+                  className="flex-1 py-3 border border-slate-800 text-[10px] text-slate-500 font-bold uppercase tracking-widest hover:text-white hover:border-slate-600 transition-all"
+                >
+                  ABORT
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-3 bg-indigo-600 text-[10px] text-white font-bold uppercase tracking-widest hover:bg-indigo-500 transition-all shadow-[0_0_20px_rgba(79,70,229,0.2)]"
+                >
+                  DECRYPT
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
       {/* Header marquee */}
       <header className="h-12 border-b border-slate-800 bg-slate-900/50 flex items-center overflow-hidden shrink-0 z-50">
         <div className="marquee-track text-[10px] font-bold tracking-widest uppercase text-indigo-400">
@@ -466,10 +731,17 @@ export default function App() {
           </button>
           <button
             onClick={() => { setActiveTab('proxies'); setActiveItem(null); }}
-            className={`p-4 mt-4 transition-all ${activeTab === 'proxies' ? 'text-indigo-500 scale-110 shadow-[0_0_15px_rgba(79,70,229,0.2)]' : 'text-slate-600 hover:text-slate-400'}`}
+            className={`p-4 mt-4 transition-all ${activeTab === 'proxies' ? 'text-emerald-500 scale-110 shadow-[0_0_15px_rgba(16,185,129,0.2)]' : 'text-slate-600 hover:text-slate-400'}`}
             title="Proxies"
           >
             <ShieldCheck size={24} strokeWidth={activeTab === 'proxies' ? 3 : 2} />
+          </button>
+          <button
+            onClick={() => { setActiveTab('profile'); setActiveItem(null); }}
+            className={`p-4 mt-4 transition-all ${activeTab === 'profile' ? 'text-indigo-400 scale-110 shadow-[0_0_15px_rgba(129,140,248,0.2)]' : 'text-slate-600 hover:text-slate-400'}`}
+            title="Profile"
+          >
+            <User size={24} strokeWidth={activeTab === 'profile' ? 3 : 2} />
           </button>
           <button
             onClick={() => { setActiveTab('admin'); setActiveItem(null); }}
@@ -514,44 +786,55 @@ export default function App() {
                 </div>
 
                 <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-12">
-                  {gamesData.map((game, index) => (
-                    <button
-                      key={game.id}
-                      onClick={() => setActiveItem({ ...game, type: 'game' })}
-                      className="bg-slate-900/60 backdrop-blur-sm border border-slate-800 p-2 flex flex-col text-left group cursor-pointer transition-all hover:border-indigo-500/50 hover:bg-indigo-500/10 h-full"
-                    >
-                      <div className="w-full bg-slate-800 mb-3 relative overflow-hidden aspect-video flex justify-center items-center shadow-inner">
-                        <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/20 to-transparent"></div>
-                        
-                        <div className="absolute -right-2 -bottom-2 font-black text-6xl text-slate-700/20 z-0 leading-none group-hover:text-indigo-500/20 transition-colors">
-                          {String(index + 1).padStart(2, '0')}
+                  {gamesData.map((game, index) => {
+                    const isLocked = !!userProfile?.gameLocks?.[game.id];
+                    return (
+                      <button
+                        key={game.id}
+                        onClick={() => handleGameSelect({ ...game, type: 'game' })}
+                        className="bg-slate-900/60 backdrop-blur-sm border border-slate-800 p-2 flex flex-col text-left group cursor-pointer transition-all hover:border-indigo-500/50 hover:bg-indigo-500/10 h-full relative"
+                      >
+                        <div className="w-full bg-slate-800 mb-3 relative overflow-hidden aspect-video flex justify-center items-center shadow-inner">
+                          <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/20 to-transparent"></div>
+                          
+                          <div className="absolute -right-2 -bottom-2 font-black text-6xl text-slate-700/20 z-0 leading-none group-hover:text-indigo-500/20 transition-colors">
+                            {String(index + 1).padStart(2, '0')}
+                          </div>
+                          
+                          <span className="absolute bottom-2 left-2 px-2 py-1 bg-slate-950/80 text-[9px] font-mono text-indigo-300 uppercase z-10 border border-indigo-900/30 shadow-sm">
+                            {game.genre}
+                          </span>
+
+                          {isLocked && (
+                            <div className="absolute top-2 right-2 p-1 bg-indigo-900/80 border border-indigo-500/50 rounded-sm z-20">
+                              <Lock size={10} className="text-indigo-300" />
+                            </div>
+                          )}
                         </div>
                         
-                        <span className="absolute bottom-2 left-2 px-2 py-1 bg-slate-950/80 text-[9px] font-mono text-indigo-300 uppercase z-10 border border-indigo-900/30 shadow-sm">
-                          {game.genre}
-                        </span>
-                      </div>
-                      
-                      <div className="relative z-10 flex flex-col flex-1 px-1">
-                        <h2 className="text-xs font-bold uppercase tracking-tight text-slate-200 group-hover:text-white transition-colors mb-1 truncate">
-                          {game.title}
-                        </h2>
-                        
-                        <p className="text-[10px] text-slate-500 uppercase mb-3 truncate">
-                          By {game.developer}
-                        </p>
-                        
-                        <div className="mt-auto flex items-center gap-2 text-[10px] text-indigo-500 font-bold uppercase tracking-widest group-hover:text-indigo-400 transition-colors">
-                          <Play className="fill-current" size={12} />
-                          Launch Game
+                        <div className="relative z-10 flex flex-col flex-1 px-1">
+                          <h2 className="text-xs font-bold uppercase tracking-tight text-slate-200 group-hover:text-white transition-colors mb-1 truncate">
+                            {game.title}
+                          </h2>
+                          
+                          <p className="text-[10px] text-slate-500 uppercase mb-3 truncate">
+                            By {game.developer}
+                          </p>
+                          
+                          <div className="mt-auto flex items-center gap-2 text-[10px] text-indigo-500 font-bold uppercase tracking-widest group-hover:text-indigo-400 transition-colors">
+                            {isLocked ? <Lock size={12} /> : <Play className="fill-current" size={12} />}
+                            {isLocked ? 'Verify Access' : 'Launch Game'}
+                          </div>
                         </div>
-                      </div>
-                    </button>
-                  ))}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             ) : activeTab === 'proxies' ? (
               renderProxies()
+            ) : activeTab === 'profile' ? (
+              renderProfile()
             ) : (
               renderAdmin()
             )
