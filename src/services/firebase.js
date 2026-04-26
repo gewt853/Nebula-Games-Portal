@@ -153,6 +153,23 @@ export const saveGameProgress = async (sessionId, gameId, progression) => {
   }, { merge: true });
 };
 
+export const updateGamePlayTime = async (sessionId, gameId, seconds) => {
+  const sessionRef = doc(db, 'sessions', sessionId);
+  
+  // We need to get the current duration first to increment it
+  const sessionDoc = await getDoc(sessionRef);
+  const currentStats = sessionDoc.data()?.playStats?.[gameId] || { duration: 0 };
+  
+  await setDoc(sessionRef, {
+    playStats: {
+      [gameId]: {
+        duration: (currentStats.duration || 0) + seconds,
+        lastPlayed: serverTimestamp()
+      }
+    }
+  }, { merge: true });
+};
+
 export const setGamePassword = async (sessionId, gameId, password) => {
   const sessionRef = doc(db, 'sessions', sessionId);
   await setDoc(sessionRef, {

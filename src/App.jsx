@@ -49,7 +49,10 @@ export default function App() {
   const [loginPasswordInput, setLoginPasswordInput] = useState('');
   const [pendingSession, setPendingSession] = useState(null);
   const [isFirstLogin, setIsFirstLogin] = useState(false);
+  const [selectedUserSess, setSelectedUserSess] = useState(null);
   const iframeContainerRef = useRef(null);
+  const playStartTimeRef = useRef(null);
+  const OWNER_ID = '4CDVMIEU6';
 
   useEffect(() => {
     // Session ID management
@@ -61,7 +64,7 @@ export default function App() {
     setSessionId(currentSessionId);
 
     // Auto-auth owner
-    if (currentSessionId === '4CDVMIEU6') {
+    if (currentSessionId === OWNER_ID) {
       setIsAdminAuthenticated(true);
     }
 
@@ -137,13 +140,25 @@ export default function App() {
   const handleGameSelect = (game) => {
     // Check if game is locked
     const password = userProfile?.gameLocks?.[game.id];
-    if (password && sessionId !== '4CDVMIEU6') {
+    if (password && sessionId !== OWNER_ID) {
       setLockedGameAttempt(game);
       setLockPasswordInput('');
       setLockError(false);
     } else {
       setActiveItem(game);
+      playStartTimeRef.current = Date.now();
     }
+  };
+
+  const handleCloseItem = async () => {
+    if (activeItem && activeItem.type === 'game' && playStartTimeRef.current) {
+      const seconds = Math.floor((Date.now() - playStartTimeRef.current) / 1000);
+      if (seconds > 0) {
+        await updateGamePlayTime(sessionId, activeItem.id, seconds);
+      }
+    }
+    setActiveItem(null);
+    playStartTimeRef.current = null;
   };
 
   const handleLockVerify = (e) => {
@@ -238,363 +253,498 @@ export default function App() {
     }
   };
 
-  const renderProfile = () => (
-    <div className="flex-1 p-6 md:p-10 w-full max-w-6xl mx-auto overflow-y-auto bg-slate-950/30 font-sans">
-      <div className="mb-10 border-b border-slate-800 pb-6 flex items-end justify-between">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-none flex items-center justify-center border border-slate-900 bg-emerald-600 shadow-[0_0_15px_rgba(16,185,129,0.4)]">
-            <User size={24} className="text-white" />
-          </div>
-          <div>
-            <h1 className="text-3xl md:text-4xl font-black tracking-tighter uppercase text-slate-200 mb-1 leading-none">
-              USER PROFILE<span className="text-emerald-500">.</span>
-            </h1>
-            <p className="text-[10px] font-mono text-emerald-400 tracking-[0.2em] uppercase">
-              Operator: {username}
-            </p>
-          </div>
-        </div>
-        {isFirstLogin && (
-          <div className="bg-indigo-900/30 border border-indigo-500/50 p-4 animate-pulse flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <ShieldCheck className="text-indigo-400" size={20} />
-              <span className="text-[10px] font-mono text-indigo-300 uppercase tracking-widest font-bold">
-                Identity Initialization Required: Please set an Account Security Key below.
-              </span>
+  const renderProfile = () => {
+    const playStats = userProfile?.playStats || {};
+    const playedGamesList = Object.entries(playStats)
+      .map(([gameId, stats]) => {
+        const game = gamesData.find(g => g.id === gameId);
+        return { ...stats, game, gameId };
+      })
+      .filter(s => s.game)
+      .sort((a, b) => b.duration - a.duration);
+
+    const top3 = playedGamesList.slice(0, 3);
+    const totalSeconds = Object.values(playStats).reduce((acc, s) => acc + (s.duration || 0), 0);
+    const totalHours = (totalSeconds / 3600).toFixed(1);
+
+    return (
+      <div className="flex-1 p-6 md:p-10 w-full max-w-6xl mx-auto overflow-y-auto bg-slate-950/30 font-sans">
+        <div className="mb-10 border-b border-slate-800 pb-6 flex items-end justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-none flex items-center justify-center border border-slate-900 bg-emerald-600 shadow-[0_0_15px_rgba(16,185,129,0.4)]">
+              <User size={24} className="text-white" />
+            </div>
+            <div>
+              <h1 className="text-3xl md:text-4xl font-black tracking-tighter uppercase text-slate-200 mb-1 leading-none">
+                USER PROFILE<span className="text-emerald-500">.</span>
+              </h1>
+              <p className="text-[10px] font-mono text-emerald-400 tracking-[0.2em] uppercase">
+                Operator: {username}
+              </p>
             </div>
           </div>
-        )}
-      </div>
+          {isFirstLogin && (
+            <div className="bg-indigo-900/30 border border-indigo-500/50 p-4 animate-pulse flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <ShieldCheck className="text-indigo-400" size={20} />
+                <span className="text-[10px] font-mono text-indigo-300 uppercase tracking-widest font-bold">
+                  Identity Initialization Required: Please set an Account Security Key below.
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* User Info & Name Update */}
-        <div className="bg-slate-900/60 border border-slate-800 p-8 space-y-6">
-          <div className="flex items-center gap-2 text-emerald-400 font-bold uppercase tracking-widest text-xs mb-4">
-            <Edit2 size={16} /> Identity Management
-          </div>
-          
-          <div>
-            <label className="block text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-2">Current Username</label>
-            <div className="flex gap-2">
-              <input 
-                type="text"
-                defaultValue={username}
-                placeholder="Change Username..."
-                onBlur={async (e) => {
-                  const val = e.target.value.trim();
-                  if (val.length >= 2 && val !== username) {
-                    const isUnique = await checkUsernameUnique(val, sessionId);
-                    if (isUnique || sessionId === '4CDVMIEU6' || sessionId === 'ZBA7JG2RX') {
-                      updateUsername(sessionId, val);
-                      setNameError('');
-                    } else {
-                      setNameError('Username taken. Reverting changes.');
-                      e.target.value = username;
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* User Info & Name Update */}
+          <div className="bg-slate-900/60 border border-slate-800 p-8 space-y-6">
+            <div className="flex items-center gap-2 text-emerald-400 font-bold uppercase tracking-widest text-xs mb-4">
+              <Edit2 size={16} /> Identity Management
+            </div>
+            
+            <div>
+              <label className="block text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-2">Current Username</label>
+              <div className="flex gap-2">
+                <input 
+                  type="text"
+                  defaultValue={username}
+                  placeholder="Change Username..."
+                  onBlur={async (e) => {
+                    const val = e.target.value.trim();
+                    if (val.length >= 2 && val !== username) {
+                      const isUnique = await checkUsernameUnique(val, sessionId);
+                      if (isUnique || sessionId === OWNER_ID || sessionId === 'ZBA7JG2RX') {
+                        updateUsername(sessionId, val);
+                        setNameError('');
+                      } else {
+                        setNameError('Username taken. Reverting changes.');
+                        e.target.value = username;
+                      }
                     }
-                  }
-                }}
-                className={`flex-1 bg-slate-950 border ${nameError && nameError.includes('taken') ? 'border-red-500' : 'border-slate-800'} p-3 text-slate-200 font-mono text-sm focus:border-emerald-500 outline-none transition-all`}
-              />
-            </div>
-            {nameError && nameError.includes('taken') && (
-              <p className="text-[9px] text-red-500 mt-2 font-mono uppercase tracking-widest">{nameError}</p>
-            )}
-          </div>
-
-          <div className="pt-6 border-t border-slate-800/50">
-            <span className="block text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-2">Network ID</span>
-            <code className="text-xs text-slate-400 font-mono bg-slate-950 p-2 block border border-slate-800/50">
-              {sessionId}
-            </code>
-          </div>
-
-          <div className="pt-6 border-t border-slate-800/50">
-            <label className="block text-[10px] font-mono text-indigo-400 uppercase tracking-widest mb-2 font-bold">Account Security Key</label>
-            <div className="flex gap-2">
-              <input 
-                type="password"
-                placeholder={userProfile?.password ? "••••••••" : "Set Account Password..."}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && e.target.value) {
-                    setUserPassword(sessionId, e.target.value);
-                    e.target.value = '';
-                    setIsFirstLogin(false);
-                  }
-                }}
-                className="flex-1 bg-slate-950 border border-slate-800 p-3 text-slate-200 font-mono text-sm focus:border-indigo-500 outline-none transition-all"
-              />
-              <button 
-                onClick={(e) => {
-                  const input = e.currentTarget.previousSibling;
-                  if (input.value) {
-                    setUserPassword(sessionId, input.value);
-                    input.value = '';
-                    setIsFirstLogin(false);
-                  }
-                }}
-                className="px-4 bg-indigo-600 text-[10px] text-white font-bold uppercase hover:bg-indigo-500 transition-all font-mono"
-              >
-                UPDATE
-              </button>
-            </div>
-            <p className="text-[9px] text-slate-500 mt-2 font-mono uppercase tracking-widest leading-relaxed">
-              This password will be required when logging in with this username from a new device.
-            </p>
-          </div>
-        </div>
-
-        {/* Game Locks */}
-        <div className="lg:col-span-2 bg-slate-900/60 border border-slate-800 p-8">
-          <div className="flex items-center gap-2 text-indigo-400 font-bold uppercase tracking-widest text-xs mb-6">
-            <Key size={16} /> Game Security
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
-            {gamesData.map(game => {
-              const isLocked = !!userProfile?.gameLocks?.[game.id];
-              return (
-                <div key={game.id} className="p-4 bg-slate-950/50 border border-slate-800/50 flex flex-col gap-3 group">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-mono text-white font-bold truncate pr-4">{game.title}</span>
-                    {isLocked && <Lock size={12} className="text-indigo-500" />}
-                  </div>
-                  
-                  <div className="flex gap-2">
-                    {!isLocked ? (
-                      <div className="flex-1 flex gap-2">
-                        <input 
-                          type="password"
-                          placeholder="Set Password..."
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' && e.target.value) {
-                              setGamePassword(sessionId, game.id, e.target.value);
-                              e.target.value = '';
-                            }
-                          }}
-                          className="flex-1 bg-slate-900 border border-slate-800 p-1.5 text-[10px] font-mono text-slate-300 outline-none focus:border-indigo-500 transition-all"
-                        />
-                        <button 
-                          onClick={(e) => {
-                            const input = e.currentTarget.previousSibling;
-                            if (input.value) {
-                              setGamePassword(sessionId, game.id, input.value);
-                              input.value = '';
-                            }
-                          }}
-                          className="px-2 bg-indigo-600 text-[9px] text-white font-bold uppercase hover:bg-indigo-500"
-                        >
-                          LOCK
-                        </button>
-                      </div>
-                    ) : (
-                      <button 
-                        onClick={() => clearGamePassword(sessionId, game.id)}
-                        className="w-full py-1.5 bg-red-950/20 border border-red-900/30 text-[9px] font-mono text-red-500 uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all"
-                      >
-                        UNLOCK GAME
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Progressions */}
-        <div className="lg:col-span-3 bg-slate-900/60 border border-slate-800 p-8">
-          <div className="flex items-center gap-2 text-emerald-400 font-bold uppercase tracking-widest text-xs mb-6">
-            <Save size={16} /> Data Progression
-          </div>
-          
-          <div className="h-40 flex flex-col items-center justify-center border border-dashed border-slate-800">
-             <span className="text-[10px] font-mono text-slate-600 uppercase mb-2">Automated Cloud Sync Active</span>
-             <p className="text-[9px] text-slate-500 font-mono text-center max-w-xs leading-relaxed uppercase">
-               Your progress in connected games is automatically saved to the nebula matrix. currently monitoring 0 active datastreams.
-             </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderAdmin = () => (
-    <div className="flex-1 p-6 md:p-10 w-full max-w-6xl mx-auto overflow-y-auto bg-slate-950/30">
-      <div className="mb-10 border-b border-slate-800 pb-6 flex items-end justify-between">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-none flex items-center justify-center border border-slate-900 bg-indigo-600 shadow-[0_0_15px_rgba(79,70,229,0.4)]">
-            <Lock size={24} className="text-white" />
-          </div>
-          <div>
-            <h1 className="text-3xl md:text-4xl font-black tracking-tighter uppercase text-slate-200 mb-1 leading-none">
-              {sessionId === '4CDVMIEU6' ? 'OWNER PANEL' : 'ADMIN PANEL'}<span className="text-indigo-500">.</span>
-            </h1>
-            <p className="text-[10px] font-mono text-indigo-400 tracking-[0.2em] uppercase">
-              {sessionId === '4CDVMIEU6' ? 'Full Authority Access' : 'System Configuration & Monitoring'}
-            </p>
-          </div>
-        </div>
-        <div className="hidden md:block">
-          <Settings size={32} className="text-slate-700" />
-        </div>
-      </div>
-
-      {!isAdminAuthenticated ? (
-        <div className="max-w-md mx-auto mt-12 p-8 bg-slate-900/60 border border-slate-800 backdrop-blur-md">
-          <h2 className="text-xl font-black uppercase tracking-tight text-white mb-6 flex items-center gap-2">
-            <Lock size={18} className="text-indigo-500" />
-            Authorization Required
-          </h2>
-          <form onSubmit={handleAdminAuth}>
-            <div className="mb-6">
-              <label className="block text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-2">Access Token</label>
-              <input
-                type="password"
-                value={adminPasswordInput}
-                onChange={(e) => setAdminPasswordInput(e.target.value)}
-                className={`w-full bg-slate-950 border ${authError ? 'border-red-500' : 'border-slate-800'} p-3 text-slate-200 font-mono text-sm focus:border-indigo-500 outline-none transition-all placeholder:text-slate-700`}
-                placeholder="••••••••••••••••"
-              />
-              {authError && (
-                <p className="text-[10px] text-red-500 mt-2 font-mono uppercase tracking-widest">Access Denied. Incorrect Token.</p>
+                  }}
+                  className={`flex-1 bg-slate-950 border ${nameError && nameError.includes('taken') ? 'border-red-500' : 'border-slate-800'} p-3 text-slate-200 font-mono text-sm focus:border-emerald-500 outline-none transition-all`}
+                />
+              </div>
+              {nameError && nameError.includes('taken') && (
+                <p className="text-[9px] text-red-500 mt-2 font-mono uppercase tracking-widest">{nameError}</p>
               )}
             </div>
-            <button
-              type="submit"
-              className="w-full py-3 bg-indigo-600 text-[10px] text-white font-bold uppercase tracking-widest hover:bg-indigo-500 transition-all shadow-[0_0_15px_rgba(79,70,229,0.2)]"
-            >
-              Verify Identity
-            </button>
-          </form>
-        </div>
-      ) : (
-        <div className="space-y-8 pb-12">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-slate-900/80 border border-slate-800 p-6 flex flex-col items-center justify-center text-center">
-              <span className="text-[10px] font-mono text-slate-500 uppercase tracking-[0.2em] mb-2">Total Site Visits</span>
-              <span className="text-4xl font-black text-white">{visitCount.toLocaleString()}</span>
+
+            <div className="pt-6 border-t border-slate-800/50">
+              <span className="block text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-2">Network ID</span>
+              <code className="text-xs text-slate-400 font-mono bg-slate-950 p-2 block border border-slate-800/50">
+                {sessionId}
+              </code>
             </div>
-            <div className="bg-slate-900/80 border border-slate-800 p-6 flex flex-col items-center justify-center text-center">
-              <span className="text-[10px] font-mono text-slate-500 uppercase tracking-[0.2em] mb-2">Active Sessions</span>
-              <span className="text-4xl font-black text-indigo-400">{sessions.length}</span>
-            </div>
-            <div className="bg-slate-900/80 border border-slate-800 p-6 flex flex-col items-center justify-center text-center">
-              <span className="text-[10px] font-mono text-slate-500 uppercase tracking-[0.2em] mb-2">Banned Users</span>
-              <span className="text-4xl font-black text-red-400">{bans.length}</span>
+
+            <div className="pt-6 border-t border-slate-800/50">
+              <label className="block text-[10px] font-mono text-indigo-400 uppercase tracking-widest mb-2 font-bold">Account Security Key</label>
+              <div className="flex gap-2">
+                <input 
+                  type="password"
+                  placeholder={userProfile?.password ? "••••••••" : "Set Account Password..."}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && e.target.value) {
+                      setUserPassword(sessionId, e.target.value);
+                      e.target.value = '';
+                      setIsFirstLogin(false);
+                    }
+                  }}
+                  className="flex-1 bg-slate-950 border border-slate-800 p-3 text-slate-200 font-mono text-sm focus:border-indigo-500 outline-none transition-all"
+                />
+                <button 
+                  onClick={(e) => {
+                    const input = e.currentTarget.previousSibling;
+                    if (input.value) {
+                      setUserPassword(sessionId, input.value);
+                      input.value = '';
+                      setIsFirstLogin(false);
+                    }
+                  }}
+                  className="px-4 bg-indigo-600 text-[10px] text-white font-bold uppercase hover:bg-indigo-500 transition-all font-mono"
+                >
+                  UPDATE
+                </button>
+              </div>
+              <p className="text-[9px] text-slate-500 mt-2 font-mono uppercase tracking-widest leading-relaxed">
+                This password will be required when logging in with this username from a new device.
+              </p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Session Manager */}
-            <div className="bg-slate-900/60 border border-slate-800 p-6">
-              <h3 className="text-sm font-bold uppercase tracking-widest text-indigo-400 mb-6 flex items-center gap-2">
-                <List size={16} />
-                Session Manager
-              </h3>
-              <div className="space-y-3 overflow-y-auto max-h-[400px] pr-2 custom-scrollbar">
-                {sessions.map(sess => (
-                  <div key={sess.id} className="p-4 bg-slate-950/50 border border-slate-800/50 flex items-center justify-between group">
-                    <div className="flex flex-col gap-1 overflow-hidden">
-                      <span className="text-[10px] font-mono text-white font-bold flex items-center gap-2">
-                        {sess.username || 'Anonymous'}
-                        <span className="text-slate-500 font-normal">({sess.id})</span>
-                        {sess.id === sessionId && <span className="px-1.5 py-0.5 bg-indigo-500/20 text-indigo-400 text-[8px] rounded-sm">YOU</span>}
-                      </span>
-                      <span className="text-[9px] font-mono text-slate-500 uppercase truncate max-w-[200px]">
-                        {sess.userAgent}
-                      </span>
-                      <span className="text-[8px] font-mono text-slate-600">
-                        Active: {sess.lastActive?.toDate?.().toLocaleString() || 'Connecting...'}
-                      </span>
-                    </div>
-                    {sess.id !== sessionId && !bans.find(b => b.id === sess.id) && (
-                      <button
-                        onClick={() => banUser(sess.id)}
-                        className="px-3 py-1 bg-red-950/30 border border-red-900/30 text-[9px] font-mono text-red-500 uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all opacity-0 group-hover:opacity-100"
-                      >
-                        Ban
-                      </button>
-                    )}
+          {/* Stats View */}
+          <div className="lg:col-span-2 bg-slate-900/60 border border-slate-800 p-8">
+            <div className="flex items-center gap-2 text-indigo-400 font-bold uppercase tracking-widest text-xs mb-6">
+              <TrendingUp size={16} /> Engagement Metrics
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+               <div>
+                  <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest block mb-1">Total Playtime</span>
+                  <div className="text-3xl font-black text-white">{totalHours} <span className="text-xs text-slate-600">HOURS</span></div>
+               </div>
+               <div>
+                  <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest block mb-1">Top Ranking Activity</span>
+                  <div className="text-sm font-bold text-emerald-400 uppercase truncate">
+                    {top3[0]?.game?.title || 'No Activity Logged'}
                   </div>
-                ))}
+               </div>
+            </div>
+
+            <div className="space-y-6">
+               <h4 className="text-[10px] font-mono text-white font-bold uppercase border-b border-slate-800 pb-2">Top 3 Most Played</h4>
+               {top3.length > 0 ? (
+                 <div className="space-y-3">
+                   {top3.map((s, idx) => (
+                     <div key={s.gameId} className="flex items-center justify-between p-3 bg-slate-950/50 border border-slate-800/50">
+                        <div className="flex items-center gap-3">
+                           <span className="text-lg font-black text-slate-800">{idx + 1}</span>
+                           <div>
+                              <div className="text-xs font-bold text-slate-200 uppercase">{s.game.title}</div>
+                              <div className="text-[9px] font-mono text-slate-600 uppercase">Last Played: {s.lastPlayed?.toDate?.().toLocaleDateString() || 'Recently'}</div>
+                           </div>
+                        </div>
+                        <div className="text-xs font-mono text-indigo-400">{(s.duration / 3600).toFixed(1)}h</div>
+                     </div>
+                   ))}
+                 </div>
+               ) : (
+                 <div className="h-20 flex items-center justify-center text-slate-700 font-mono text-[10px] italic">No engagement data recorded.</div>
+               )}
+
+               <h4 className="text-[10px] font-mono text-white font-bold uppercase border-b border-slate-800 pb-2 pt-4">History Breakdown</h4>
+               <div className="max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
+                  {playedGamesList.length > 0 ? playedGamesList.map(s => (
+                    <div key={s.gameId} className="flex justify-between items-center py-2 border-b border-slate-800/30 text-[10px] font-mono">
+                       <span className="text-slate-400 uppercase">{s.game.title}</span>
+                       <span className="text-slate-600">{(s.duration / 60).toFixed(0)}m played</span>
+                    </div>
+                  )) : (
+                    <div className="text-[10px] font-mono text-slate-700 uppercase">Registry Empty</div>
+                  )}
+               </div>
+            </div>
+          </div>
+
+          {/* Game Locks */}
+          <div className="lg:col-span-3 bg-slate-900/60 border border-slate-800 p-8">
+            <div className="flex items-center gap-2 text-indigo-400 font-bold uppercase tracking-widest text-xs mb-6">
+              <Key size={16} /> Game Security
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+              {gamesData.map(game => {
+                const isLocked = !!userProfile?.gameLocks?.[game.id];
+                return (
+                  <div key={game.id} className="p-4 bg-slate-950/50 border border-slate-800/50 flex flex-col gap-3 group">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-mono text-white font-bold truncate pr-4">{game.title}</span>
+                      {isLocked && <Lock size={12} className="text-indigo-500" />}
+                    </div>
+                    
+                    <div className="flex gap-2">
+                      {!isLocked ? (
+                        <div className="flex-1 flex gap-2">
+                          <input 
+                            type="password"
+                            placeholder="Set Password..."
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && e.target.value) {
+                                setGamePassword(sessionId, game.id, e.target.value);
+                                e.target.value = '';
+                              }
+                            }}
+                            className="flex-1 bg-slate-900 border border-slate-800 p-1.5 text-[10px] font-mono text-slate-300 outline-none focus:border-indigo-500 transition-all"
+                          />
+                          <button 
+                            onClick={(e) => {
+                              const input = e.currentTarget.previousSibling;
+                              if (input.value) {
+                                setGamePassword(sessionId, game.id, input.value);
+                                input.value = '';
+                              }
+                            }}
+                            className="px-2 bg-indigo-600 text-[9px] text-white font-bold uppercase hover:bg-indigo-500"
+                          >
+                            LOCK
+                          </button>
+                        </div>
+                      ) : (
+                        <button 
+                          onClick={() => clearGamePassword(sessionId, game.id)}
+                          className="w-full py-1.5 bg-red-950/20 border border-red-900/30 text-[9px] font-mono text-red-500 uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all"
+                        >
+                          UNLOCK GAME
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderAdmin = () => {
+    const isOwner = sessionId === OWNER_ID;
+
+    return (
+      <div className="flex-1 p-6 md:p-10 w-full max-w-6xl mx-auto overflow-y-auto bg-slate-950/30">
+        <div className="mb-10 border-b border-slate-800 pb-6 flex items-end justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-none flex items-center justify-center border border-slate-900 bg-indigo-600 shadow-[0_0_15px_rgba(79,70,229,0.4)]">
+              <Lock size={24} className="text-white" />
+            </div>
+            <div>
+              <h1 className="text-3xl md:text-4xl font-black tracking-tighter uppercase text-slate-200 mb-1 leading-none">
+                {isOwner ? 'OWNER PANEL' : 'ADMIN PANEL'}<span className="text-indigo-500">.</span>
+              </h1>
+              <p className="text-[10px] font-mono text-indigo-400 tracking-[0.2em] uppercase">
+                {isOwner ? 'Full Authority Access' : 'System Configuration & Monitoring'}
+              </p>
+            </div>
+          </div>
+          <div className="hidden md:block">
+            <Settings size={32} className="text-slate-700" />
+          </div>
+        </div>
+
+        {!isAdminAuthenticated ? (
+          <div className="max-w-md mx-auto mt-12 p-8 bg-slate-900/60 border border-slate-800 backdrop-blur-md">
+            <h2 className="text-xl font-black uppercase tracking-tight text-white mb-6 flex items-center gap-2">
+              <Lock size={18} className="text-indigo-500" />
+              Authorization Required
+            </h2>
+            <form onSubmit={handleAdminAuth}>
+              <div className="mb-6">
+                <label className="block text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-2">Access Token</label>
+                <input
+                  type="password"
+                  value={adminPasswordInput}
+                  onChange={(e) => setAdminPasswordInput(e.target.value)}
+                  className={`w-full bg-slate-950 border ${authError ? 'border-red-500' : 'border-slate-800'} p-3 text-slate-200 font-mono text-sm focus:border-indigo-500 outline-none transition-all placeholder:text-slate-700`}
+                  placeholder="••••••••••••••••"
+                />
+                {authError && (
+                  <p className="text-[10px] text-red-500 mt-2 font-mono uppercase tracking-widest">Access Denied. Incorrect Token.</p>
+                )}
+              </div>
+              <button
+                type="submit"
+                className="w-full py-3 bg-indigo-600 text-[10px] text-white font-bold uppercase tracking-widest hover:bg-indigo-500 transition-all shadow-[0_0_15px_rgba(79,70,229,0.2)]"
+              >
+                Verify Identity
+              </button>
+            </form>
+          </div>
+        ) : (
+          <div className="space-y-8 pb-12">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-slate-900/80 border border-slate-800 p-6 flex flex-col items-center justify-center text-center">
+                <span className="text-[10px] font-mono text-slate-500 uppercase tracking-[0.2em] mb-2">Total Site Visits</span>
+                <span className="text-4xl font-black text-white">{visitCount.toLocaleString()}</span>
+              </div>
+              <div className="bg-slate-900/80 border border-slate-800 p-6 flex flex-col items-center justify-center text-center">
+                <span className="text-[10px] font-mono text-slate-500 uppercase tracking-[0.2em] mb-2">Active Sessions</span>
+                <span className="text-4xl font-black text-indigo-400">{sessions.length}</span>
+              </div>
+              <div className="bg-slate-900/80 border border-slate-800 p-6 flex flex-col items-center justify-center text-center">
+                <span className="text-[10px] font-mono text-slate-500 uppercase tracking-[0.2em] mb-2">Banned Users</span>
+                <span className="text-4xl font-black text-red-400">{bans.length}</span>
               </div>
             </div>
 
-            {/* Ban Notebook */}
-            <div className="bg-slate-900/60 border border-slate-800 p-6">
-              <h3 className="text-sm font-bold uppercase tracking-widest text-red-400 mb-6 flex items-center gap-2">
-                <ShieldCheck size={16} />
-                Banned Registry
-              </h3>
-              <div className="space-y-3 overflow-y-auto max-h-[400px] pr-2 custom-scrollbar">
-                {bans.length > 0 ? bans.map(ban => (
-                  <div key={ban.id} className="p-4 bg-red-950/10 border border-red-900/20 flex items-center justify-between group">
-                    <div className="flex flex-col gap-1 overflow-hidden">
-                      <span className="text-[10px] font-mono text-red-400 font-bold">
-                        {sessions.find(s => s.id === ban.id)?.username || 'Banned Operator'} 
-                        <span className="text-slate-600 font-normal ml-2">({ban.id})</span>
-                      </span>
-                      <span className="text-[8px] font-mono text-slate-600">
-                        Banned on: {ban.bannedAt?.toDate?.().toLocaleString() || 'Recent'}
-                      </span>
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+              {/* Session Manager */}
+              <div className="bg-slate-900/60 border border-slate-800 p-6">
+                <h3 className="text-sm font-bold uppercase tracking-widest text-indigo-400 mb-6 flex items-center gap-2">
+                  <List size={16} />
+                  Session Manager
+                </h3>
+                <div className="space-y-3 overflow-y-auto max-h-[400px] pr-2 custom-scrollbar">
+                  {sessions.map(sess => {
+                    const isOwnerSess = sess.id === OWNER_ID;
+                    const isCurrent = sess.id === sessionId;
+                    const isSelected = selectedUserSess?.id === sess.id;
+
+                    return (
+                      <div 
+                        key={sess.id} 
+                        onClick={() => setSelectedUserSess(sess)}
+                        className={`p-4 border transition-all cursor-pointer flex items-center justify-between group ${isSelected ? 'bg-indigo-600/20 border-indigo-500' : 'bg-slate-950/50 border-slate-800/50 hover:border-slate-600'}`}
+                      >
+                        <div className="flex flex-col gap-1 overflow-hidden">
+                          <span className={`${isOwnerSess ? 'text-amber-400' : 'text-white'} text-[10px] font-mono font-bold flex items-center gap-2`}>
+                            {sess.username || 'Anonymous'}
+                            <span className="text-slate-500 font-normal">({sess.id})</span>
+                            {isOwnerSess && <span className="px-1.5 py-0.5 bg-amber-500/20 text-amber-500 text-[8px] rounded-sm border border-amber-500/30 uppercase">OWNER</span>}
+                            {isCurrent && <span className="px-1.5 py-0.5 bg-indigo-500/20 text-indigo-400 text-[8px] rounded-sm uppercase">YOU</span>}
+                          </span>
+                          <span className="text-[9px] font-mono text-slate-500 uppercase truncate max-w-[200px]">
+                            {sess.userAgent}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          {sess.id !== sessionId && !isOwnerSess && !bans.find(b => b.id === sess.id) && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); banUser(sess.id); }}
+                              className="px-3 py-1 bg-red-950/30 border border-red-900/30 text-[9px] font-mono text-red-500 uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all opacity-0 group-hover:opacity-100"
+                            >
+                              Ban
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Inspector View */}
+              <div className="bg-slate-900/60 border border-slate-800 p-6">
+                <h3 className="text-sm font-bold uppercase tracking-widest text-emerald-400 mb-6 flex items-center gap-2">
+                  <User size={16} />
+                  Identity Inspector
+                </h3>
+                
+                {selectedUserSess ? (
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-2 gap-4">
+                       <div className="p-3 bg-slate-950 border border-slate-800">
+                          <span className="text-[8px] font-mono text-slate-500 uppercase block mb-1">Username</span>
+                          <div className="text-xs font-bold text-white uppercase">{selectedUserSess.username || 'NOT_SET'}</div>
+                       </div>
+                       <div className="p-3 bg-slate-950 border border-slate-800">
+                          <span className="text-[8px] font-mono text-slate-500 uppercase block mb-1">Session Token</span>
+                          <div className="text-xs font-mono text-indigo-400 truncate">{selectedUserSess.id}</div>
+                       </div>
+                       <div className="p-3 bg-slate-950 border border-slate-800">
+                          <span className="text-[8px] font-mono text-slate-500 uppercase block mb-1">Security Cipher</span>
+                          <div className="text-xs font-mono text-indigo-400">{selectedUserSess.password || 'UNSECURED'}</div>
+                       </div>
+                       <div className="p-3 bg-slate-950 border border-slate-800">
+                          <span className="text-[8px] font-mono text-slate-500 uppercase block mb-1">Connection Status</span>
+                          <div className={`text-xs font-black uppercase ${selectedUserSess.isOnline ? 'text-emerald-400' : 'text-slate-600'}`}>
+                            {selectedUserSess.isOnline ? 'ONLINE' : 'OFFLINE'}
+                          </div>
+                       </div>
                     </div>
-                    <button
-                      onClick={() => unbanUser(ban.id)}
-                      className="px-3 py-1 bg-slate-950/50 border border-slate-800 text-[9px] font-mono text-slate-400 uppercase tracking-widest hover:border-emerald-500 hover:text-emerald-400 transition-all"
-                    >
-                      Unban User
-                    </button>
+
+                    <div className="p-4 bg-slate-950 border border-slate-800">
+                        <span className="text-[8px] font-mono text-slate-500 uppercase block mb-3 border-b border-slate-800 pb-1">Activity Analysis</span>
+                        {selectedUserSess.playStats && Object.keys(selectedUserSess.playStats).length > 0 ? (
+                           <div className="space-y-2">
+                              {Object.entries(selectedUserSess.playStats)
+                                .map(([gameId, stats]) => ({ ...stats, game: gamesData.find(g => g.id === gameId) }))
+                                .filter(s => s.game)
+                                .sort((a, b) => b.duration - a.duration)
+                                .slice(0, 5)
+                                .map((s, idx) => (
+                                  <div key={idx} className="flex justify-between items-center text-[10px] font-mono">
+                                     <span className="text-slate-400 uppercase">{s.game.title}</span>
+                                     <span className="text-indigo-400">{(s.duration / 60).toFixed(0)}m</span>
+                                  </div>
+                                ))}
+                           </div>
+                        ) : (
+                          <div className="text-[10px] font-mono text-slate-700 italic">No activity data available for this probe.</div>
+                        )}
+                    </div>
+
+                    <p className="text-[9px] font-mono text-slate-600 uppercase tracking-widest leading-relaxed">
+                       PROBE_ID: {selectedUserSess.id}<br/>
+                       LAST_AUTH: {selectedUserSess.lastActive?.toDate?.().toLocaleString() || 'N/A'}
+                    </p>
                   </div>
-                )) : (
-                  <div className="h-40 flex items-center justify-center text-slate-600 font-mono text-[10px] uppercase">
-                    No active bans in registry
+                ) : (
+                  <div className="h-40 flex flex-col items-center justify-center text-slate-700 border border-dashed border-slate-800">
+                     <User size={32} className="opacity-20 mb-2" />
+                     <span className="text-[10px] font-mono uppercase">Select a session to inspect</span>
                   </div>
                 )}
               </div>
             </div>
-          </div>
 
-          <div className="bg-slate-900/60 border border-slate-800 p-8">
-            <h3 className="text-sm font-bold uppercase tracking-widest text-indigo-400 mb-6 flex items-center gap-2">
-              <Info size={16} />
-              System Configuration
-            </h3>
-            <div className="space-y-4 font-mono text-[11px]">
-              <div className="flex justify-between border-b border-slate-800/50 pb-2">
-                <span className="text-slate-500 uppercase">Core Logic</span>
-                <span className="text-emerald-400">OPERATIONAL</span>
+            {/* Ban Registry */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="bg-slate-900/60 border border-slate-800 p-6">
+                <h3 className="text-sm font-bold uppercase tracking-widest text-red-400 mb-6 flex items-center gap-2">
+                  <ShieldCheck size={16} />
+                  Registry of Forbidden Identities
+                </h3>
+                <div className="space-y-3 overflow-y-auto max-h-[400px] pr-2 custom-scrollbar">
+                  {bans.length > 0 ? bans.map(ban => (
+                    <div key={ban.id} className="p-4 bg-red-950/10 border border-red-900/20 flex items-center justify-between group">
+                      <div className="flex flex-col gap-1 overflow-hidden">
+                        <span className="text-[10px] font-mono text-red-400 font-bold">
+                          {sessions.find(s => s.id === ban.id)?.username || 'Banned Operator'} 
+                          <span className="text-slate-600 font-normal ml-2">({ban.id})</span>
+                        </span>
+                        <span className="text-[8px] font-mono text-slate-600">
+                          Banned on: {ban.bannedAt?.toDate?.().toLocaleString() || 'Recent'}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => unbanUser(ban.id)}
+                        className="px-3 py-1 bg-slate-950/50 border border-slate-800 text-[9px] font-mono text-slate-400 uppercase tracking-widest hover:border-emerald-500 hover:text-emerald-400 transition-all"
+                      >
+                        Restore Access
+                      </button>
+                    </div>
+                  )) : (
+                    <div className="h-40 flex items-center justify-center text-slate-600 font-mono text-[10px] uppercase">
+                      Registry clear. No restrictions active.
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="flex justify-between border-b border-slate-800/50 pb-2">
-                <span className="text-slate-500 uppercase">Database Link</span>
-                <span className="text-emerald-400">ENCRYPTED</span>
-              </div>
-              <div className="flex justify-between border-b border-slate-800/50 pb-2">
-                <span className="text-slate-500 uppercase">Admin Access</span>
-                <span className={`${sessionId === '4CDVMIEU6' ? 'text-emerald-400' : 'text-indigo-400'} font-bold`}>
-                  {sessionId === '4CDVMIEU6' ? 'OWNER_VERIFIED' : 'AUTHORIZED'}
-                </span>
-              </div>
-              <div className="flex justify-between border-b border-slate-800/50 pb-2">
-                <span className="text-slate-500 uppercase">Local Session ID</span>
-                <span className="text-slate-400 truncate ml-4 tracking-tighter">
-                  {sessionId}
-                </span>
+
+              <div className="bg-slate-900/60 border border-slate-800 p-8">
+                <h3 className="text-sm font-bold uppercase tracking-widest text-indigo-400 mb-6 flex items-center gap-2">
+                  <Info size={16} />
+                  System Configuration
+                </h3>
+                <div className="space-y-4 font-mono text-[11px]">
+                  <div className="flex justify-between border-b border-slate-800/50 pb-2">
+                    <span className="text-slate-500 uppercase">Core Logic</span>
+                    <span className="text-emerald-400">OPERATIONAL</span>
+                  </div>
+                  <div className="flex justify-between border-b border-slate-800/50 pb-2">
+                    <span className="text-slate-500 uppercase">Database Link</span>
+                    <span className="text-emerald-400">ENCRYPTED</span>
+                  </div>
+                  <div className="flex justify-between border-b border-slate-800/50 pb-2">
+                    <span className="text-slate-500 uppercase">Admin Access</span>
+                    <span className={`${isOwner ? 'text-emerald-400' : 'text-indigo-400'} font-bold`}>
+                      {isOwner ? 'OWNER_VERIFIED' : 'AUTHORIZED'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between border-b border-slate-800/50 pb-2">
+                    <span className="text-slate-500 uppercase">Local Session ID</span>
+                    <span className="text-slate-400 truncate ml-4 tracking-tighter">
+                      {sessionId}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
+            
+            {!isOwner && (
+              <button
+                onClick={() => { setIsAdminAuthenticated(false); setAdminPasswordInput(''); }}
+                className="px-6 py-2 border border-slate-800 text-[9px] font-mono text-slate-500 hover:border-red-500/50 hover:text-red-400 transition-all uppercase tracking-[0.2em]"
+              >
+                Revoke Access / Logout
+              </button>
+            )}
           </div>
-          
-          {sessionId !== '4CDVMIEU6' && (
-            <button
-              onClick={() => { setIsAdminAuthenticated(false); setAdminPasswordInput(''); }}
-              className="px-6 py-2 border border-slate-800 text-[9px] font-mono text-slate-500 hover:border-red-500/50 hover:text-red-400 transition-all uppercase tracking-[0.2em]"
-            >
-              Revoke Access / Logout
-            </button>
-          )}
-        </div>
-      )}
-    </div>
-  );
+        )}
+      </div>
+    );
+  };
 
   const renderProxies = () => (
     <div className="flex-1 p-6 md:p-10 w-full max-w-6xl mx-auto overflow-y-auto bg-slate-950/30">
@@ -891,28 +1041,28 @@ export default function App() {
         {/* Navigation Sidebar */}
         <nav className="w-16 md:w-20 border-r border-slate-800 bg-slate-950/40 backdrop-blur-sm flex flex-col items-center py-8 shrink-0 z-40">
           <button
-            onClick={() => { setActiveTab('games'); setActiveItem(null); }}
+            onClick={() => { setActiveTab('games'); handleCloseItem(); }}
             className={`p-4 transition-all ${activeTab === 'games' ? 'text-indigo-500 scale-110 shadow-[0_0_15px_rgba(79,70,229,0.2)]' : 'text-slate-600 hover:text-slate-400'}`}
             title="Games"
           >
             <Gamepad2 size={24} strokeWidth={activeTab === 'games' ? 3 : 2} />
           </button>
           <button
-            onClick={() => { setActiveTab('proxies'); setActiveItem(null); }}
+            onClick={() => { setActiveTab('proxies'); handleCloseItem(); }}
             className={`p-4 mt-4 transition-all ${activeTab === 'proxies' ? 'text-emerald-500 scale-110 shadow-[0_0_15px_rgba(16,185,129,0.2)]' : 'text-slate-600 hover:text-slate-400'}`}
             title="Proxies"
           >
             <ShieldCheck size={24} strokeWidth={activeTab === 'proxies' ? 3 : 2} />
           </button>
           <button
-            onClick={() => { setActiveTab('profile'); setActiveItem(null); }}
+            onClick={() => { setActiveTab('profile'); handleCloseItem(); }}
             className={`p-4 mt-4 transition-all ${activeTab === 'profile' ? 'text-indigo-400 scale-110 shadow-[0_0_15px_rgba(129,140,248,0.2)]' : 'text-slate-600 hover:text-slate-400'}`}
             title="Profile"
           >
             <User size={24} strokeWidth={activeTab === 'profile' ? 3 : 2} />
           </button>
           <button
-            onClick={() => { setActiveTab('admin'); setActiveItem(null); }}
+            onClick={() => { setActiveTab('admin'); handleCloseItem(); }}
             className={`p-4 mt-4 transition-all ${activeTab === 'admin' ? 'text-indigo-500 scale-110 shadow-[0_0_15px_rgba(79,70,229,0.2)]' : 'text-slate-600 hover:text-slate-400'}`}
             title="Admin"
           >
@@ -1056,7 +1206,7 @@ export default function App() {
                       <div className="flex items-center gap-4">
                         <div className="flex gap-2">
                           <button 
-                            onClick={() => setActiveItem(null)}
+                            onClick={handleCloseItem}
                             className="flex items-center justify-center w-8 h-8 bg-slate-900 border border-slate-700 hover:border-indigo-500 text-slate-400 hover:text-indigo-400 transition-colors shadow-sm cursor-pointer"
                             title="Go Back"
                           >

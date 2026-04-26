@@ -36,6 +36,10 @@
         "password": {
           "type": "string",
           "description": "Password set by the user to protect their session."
+        },
+        "playStats": {
+          "type": "object",
+          "description": "Tracking game engagement, keyed by game ID with duration and lastPlayed fields."
         }
       },
       "required": ["lastActive", "isOnline"]
