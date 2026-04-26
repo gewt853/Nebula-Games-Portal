@@ -23,6 +23,7 @@ import {
   setUserPassword,
   rateGame,
   subscribeToGameStats,
+  updateSiteTheme,
   sendMessage,
   subscribeToMessages,
   setAgreedChatRules,
@@ -66,11 +67,72 @@ export default function App() {
   const chatEndRef = useRef(null);
   const [auditLogs, setAuditLogs] = useState([]);
   const [showBanModal, setShowBanModal] = useState(null); // id of user being banned
+  const [siteTheme, setSiteTheme] = useState('indigo');
   const [banReason, setBanReason] = useState('');
   const [banRule, setBanRule] = useState('');
   const iframeContainerRef = useRef(null);
   const playStartTimeRef = useRef(null);
   const OWNER_ID = '4CDVMIEU6';
+
+  const THEMES = {
+    indigo: {
+      primary: 'bg-indigo-600',
+      primaryText: 'text-indigo-600',
+      hover: 'hover:bg-indigo-500',
+      text: 'text-indigo-400',
+      accent: 'indigo-500',
+      bg: 'bg-indigo-600/10',
+      border: 'border-indigo-500/30',
+      glow: 'shadow-[0_0_15px_rgba(79,70,229,0.3)]',
+      fill: 'fill-indigo-400/20'
+    },
+    green: {
+      primary: 'bg-emerald-600',
+      primaryText: 'text-emerald-600',
+      hover: 'hover:bg-emerald-500',
+      text: 'text-emerald-400',
+      accent: 'emerald-500',
+      bg: 'bg-emerald-600/10',
+      border: 'border-emerald-500/30',
+      glow: 'shadow-[0_0_15px_rgba(16,185,129,0.3)]',
+      fill: 'fill-emerald-400/20'
+    },
+    pink: {
+      primary: 'bg-rose-600',
+      primaryText: 'text-rose-600',
+      hover: 'hover:bg-rose-500',
+      text: 'text-rose-400',
+      accent: 'rose-500',
+      bg: 'bg-rose-600/10',
+      border: 'border-rose-500/30',
+      glow: 'shadow-[0_0_15px_rgba(225,29,72,0.3)]',
+      fill: 'fill-rose-400/20'
+    },
+    red: {
+      primary: 'bg-red-600',
+      primaryText: 'text-red-600',
+      hover: 'hover:bg-red-500',
+      text: 'text-red-400',
+      accent: 'red-500',
+      bg: 'bg-red-600/10',
+      border: 'border-red-500/30',
+      glow: 'shadow-[0_0_15px_rgba(220,38,38,0.3)]',
+      fill: 'fill-red-400/20'
+    },
+    orange: {
+      primary: 'bg-amber-600',
+      primaryText: 'text-amber-600',
+      hover: 'hover:bg-amber-500',
+      text: 'text-amber-400',
+      accent: 'amber-500',
+      bg: 'bg-amber-600/10',
+      border: 'border-amber-500/30',
+      glow: 'shadow-[0_0_15px_rgba(245,158,11,0.3)]',
+      fill: 'fill-amber-400/20'
+    }
+  };
+
+  const t = THEMES[siteTheme] || THEMES.indigo;
 
   useEffect(() => {
     // Session ID management
@@ -150,6 +212,7 @@ export default function App() {
       if (docSnapshot.exists()) {
         const data = docSnapshot.data();
         setUserProfile(data);
+        if (data.siteTheme) setSiteTheme(data.siteTheme);
 
         // Sync Admin State
         if (data.isAdmin || currentSessionId === OWNER_ID) {
@@ -404,16 +467,16 @@ export default function App() {
       return (
         <div className="flex-1 flex items-center justify-center p-6 bg-slate-950/30">
           <div className="max-w-2xl w-full bg-slate-900 border border-slate-800 p-10 shadow-2xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-600/5 blur-[100px] -mr-32 -mt-32"></div>
+            <div className={`absolute top-0 right-0 w-64 h-64 ${t.bg} blur-[100px] -mr-32 -mt-32`}></div>
             
             <div className="relative z-10">
               <div className="flex items-center gap-4 mb-8">
-                <div className="w-12 h-12 bg-amber-500/20 border border-amber-500/30 flex items-center justify-center">
-                  <ShieldCheck size={24} className="text-amber-500" />
+                <div className={`w-12 h-12 bg-${t.accent}/20 border border-${t.accent}/30 flex items-center justify-center`}>
+                  <ShieldCheck size={24} className={t.text} />
                 </div>
                 <div>
                   <h2 className="text-2xl font-black uppercase tracking-tighter text-white">COMMUNICATIONS PROTOCOL</h2>
-                  <p className="text-[10px] font-mono text-amber-500 uppercase tracking-widest mt-1">Rule Agreement Required</p>
+                  <p className={`text-[10px] font-mono ${t.text} uppercase tracking-widest mt-1`}>Rule Agreement Required</p>
                 </div>
               </div>
 
@@ -432,7 +495,7 @@ export default function App() {
                     "No distribution of malicious code or dangerous links."
                   ].map((rule, idx) => (
                     <div key={idx} className="p-4 bg-slate-950 border border-slate-800 flex flex-col gap-2">
-                       <span className="text-[8px] font-mono text-indigo-500 font-bold uppercase tracking-widest">Rule {idx + 1}</span>
+                       <span className={`text-[8px] font-mono ${t.text} font-bold uppercase tracking-widest`}>Rule {idx + 1}</span>
                        <p className="text-[10px] font-mono text-slate-300 uppercase leading-snug">{rule}</p>
                     </div>
                   ))}
@@ -445,7 +508,7 @@ export default function App() {
 
               <button 
                 onClick={() => setAgreedChatRules(sessionId)}
-                className="w-full py-4 bg-emerald-600 text-[10px] text-white font-bold uppercase tracking-[0.3em] hover:bg-emerald-500 transition-all shadow-[0_0_20px_rgba(16,185,129,0.3)]"
+                className={`w-full py-4 ${t.primary} text-[10px] text-white font-bold uppercase tracking-[0.3em] ${t.hover} transition-all ${t.glow}`}
               >
                 I AGREE TO THE PROTOCOLS & ENTER
               </button>
@@ -460,17 +523,17 @@ export default function App() {
         {/* Chat Header */}
         <div className="p-6 border-b border-slate-800 flex items-center justify-between shrink-0">
            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 bg-amber-600/20 border border-amber-600/30 flex items-center justify-center">
-                 <MessageSquare size={20} className="text-amber-500" />
+              <div className={`w-10 h-10 ${t.bg} border ${t.border} flex items-center justify-center`}>
+                 <MessageSquare size={20} className={t.text} />
               </div>
               <div>
                  <h2 className="text-lg font-black uppercase tracking-tighter text-white leading-none">GLOBAL TRANSMISSIONS</h2>
-                 <p className="text-[9px] font-mono text-emerald-400 uppercase tracking-widest mt-1">Live Subspace Frequency</p>
+                 <p className={`text-[9px] font-mono ${t.text} uppercase tracking-widest mt-1`}>Live Subspace Frequency</p>
               </div>
            </div>
            <div className="flex items-center gap-2">
-             <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,1)]"></div>
-             <span className="text-[10px] font-mono text-emerald-500 font-bold uppercase tracking-widest">Network Live</span>
+             <div className={`w-2 h-2 ${t.primary.replace('bg-', 'bg-')} rounded-full animate-pulse ${t.glow.replace('shadow-[', 'shadow-[0_0_8px_')}`}></div>
+             <span className={`text-[10px] font-mono ${t.text} font-bold uppercase tracking-widest`}>Network Live</span>
            </div>
         </div>
 
@@ -503,11 +566,11 @@ export default function App() {
                   <div className="flex items-center gap-3 mb-1">
                     {!isMe && (
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[9px] font-mono font-black text-indigo-400 uppercase">{msg.senderName}</span>
+                        <span className={`text-[9px] font-mono font-black ${t.text} uppercase`}>{msg.senderName}</span>
                         {msg.senderId === OWNER_ID ? (
                           <Crown size={10} className="text-amber-400 fill-amber-400/20" />
                         ) : msg.isAdmin ? (
-                          <Shield size={10} className="text-indigo-400 fill-indigo-400/20" />
+                          <Shield size={10} className={`${t.text} ${t.fill}`} />
                         ) : null}
                       </div>
                     )}
@@ -516,18 +579,18 @@ export default function App() {
                     </span>
                     {isMe && (
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[9px] font-mono font-black text-emerald-400 uppercase">{username} (YOU)</span>
+                        <span className={`text-[9px] font-mono font-black ${t.text} uppercase`}>{username} (YOU)</span>
                         {sessionId === OWNER_ID ? (
                           <Crown size={10} className="text-amber-400 fill-amber-400/20" />
                         ) : isAdminAuthenticated ? (
-                          <Shield size={10} className="text-indigo-400 fill-indigo-400/20" />
+                          <Shield size={10} className={`${t.text} ${t.fill}`} />
                         ) : null}
                       </div>
                     )}
                   </div>
                   <div className={`max-w-[80%] md:max-w-[60%] p-3 text-xs font-mono uppercase tracking-tight leading-relaxed shadow-lg ${
                     isMe 
-                      ? 'bg-indigo-600/10 border border-indigo-500/30 text-indigo-200' 
+                      ? `${t.bg} ${t.border} ${t.text}` 
                       : 'bg-slate-900 border border-slate-800 text-slate-200'
                   }`}>
                     {msg.text}
@@ -556,12 +619,12 @@ export default function App() {
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               placeholder="Inject message into datastream..."
-              className="flex-1 bg-slate-950 border border-slate-800 p-4 text-slate-200 font-mono text-xs focus:border-indigo-500 outline-none transition-all placeholder:text-slate-800"
+              className={`flex-1 bg-slate-950 border border-slate-800 p-4 text-slate-200 font-mono text-xs focus:${t.border.replace('border-', 'border-')} outline-none transition-all placeholder:text-slate-800`}
             />
             <button 
               type="submit"
               disabled={!newMessage.trim()}
-              className="px-6 bg-indigo-600 text-white hover:bg-indigo-500 transition-all shadow-[0_0_15px_rgba(79,70,229,0.3)] disabled:opacity-30 disabled:shadow-none"
+              className={`px-6 ${t.primary} text-white ${t.hover} transition-all ${t.glow} disabled:opacity-30 disabled:shadow-none`}
             >
               <Send size={18} />
             </button>
@@ -598,23 +661,23 @@ export default function App() {
       <div className="flex-1 p-6 md:p-10 w-full max-w-6xl mx-auto overflow-y-auto bg-slate-950/30 font-sans">
         <div className="mb-10 border-b border-slate-800 pb-6 flex items-end justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-none flex items-center justify-center border border-slate-900 bg-emerald-600 shadow-[0_0_15px_rgba(16,185,129,0.4)]">
+                <div className={`w-12 h-12 rounded-none flex items-center justify-center border border-slate-900 ${t.primary} ${t.glow}`}>
               <User size={24} className="text-white" />
             </div>
             <div>
               <h1 className="text-3xl md:text-4xl font-black tracking-tighter uppercase text-slate-200 mb-1 leading-none">
-                USER PROFILE<span className="text-emerald-500">.</span>
+                USER PROFILE<span className={t.primaryText}>.</span>
               </h1>
-              <p className="text-[10px] font-mono text-emerald-400 tracking-[0.2em] uppercase">
+              <p className={`text-[10px] font-mono ${t.text} tracking-[0.2em] uppercase`}>
                 Operator: {username}
               </p>
             </div>
           </div>
           {isFirstLogin && (
-            <div className="bg-indigo-900/30 border border-indigo-500/50 p-4 animate-pulse flex items-center justify-between">
+            <div className={`${t.bg} ${t.border} p-4 animate-pulse flex items-center justify-between`}>
               <div className="flex items-center gap-3">
-                <ShieldCheck className="text-indigo-400" size={20} />
-                <span className="text-[10px] font-mono text-indigo-300 uppercase tracking-widest font-bold">
+                <ShieldCheck className={t.text} size={20} />
+                <span className={`text-[10px] font-mono ${t.text} uppercase tracking-widest font-bold text-center sm:text-left`}>
                   Identity Initialization Required: Please set an Account Security Key below.
                 </span>
               </div>
@@ -625,8 +688,22 @@ export default function App() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* User Info & Name Update */}
           <div className="bg-slate-900/60 border border-slate-800 p-8 space-y-6">
-            <div className="flex items-center gap-2 text-emerald-400 font-bold uppercase tracking-widest text-xs mb-4">
+            <div className={`flex items-center gap-2 ${t.text} font-bold uppercase tracking-widest text-xs mb-4`}>
               <Edit2 size={16} /> Identity Management
+            </div>
+
+            <div className="bg-slate-950 border border-slate-800 p-4 mb-4">
+              <div className="flex items-center justify-between mb-2">
+                 <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">Network Shield</span>
+                 <span className={`text-[10px] font-mono ${t.text} font-bold uppercase tracking-widest`}>Active</span>
+              </div>
+              <div className="flex items-center gap-2">
+                 <ShieldCheck size={12} className={t.text} />
+                 <span className="text-[9px] font-mono text-slate-400 uppercase">Cloudflare Global DNS Protected</span>
+              </div>
+              <div className="mt-2 h-1 bg-slate-900 overflow-hidden">
+                 <div className={`h-full ${t.primary} w-full animate-[pulse_2s_infinite]`}></div>
+              </div>
             </div>
             
             <div>
@@ -649,7 +726,7 @@ export default function App() {
                       }
                     }
                   }}
-                  className={`flex-1 bg-slate-950 border ${nameError && nameError.includes('taken') ? 'border-red-500' : 'border-slate-800'} p-3 text-slate-200 font-mono text-sm focus:border-emerald-500 outline-none transition-all`}
+                  className={`flex-1 bg-slate-950 border ${nameError && nameError.includes('taken') ? 'border-red-500' : 'border-slate-800'} p-3 text-slate-200 font-mono text-sm focus:${t.border.replace('border-', 'border-')} outline-none transition-all`}
                 />
               </div>
               {nameError && nameError.includes('taken') && (
@@ -659,14 +736,37 @@ export default function App() {
 
             <div className="pt-6 border-t border-slate-800/50">
               <span className="block text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-2">Network ID</span>
-              <code className="text-xs text-slate-400 font-mono bg-slate-950 p-2 block border border-slate-800/50">
+              <code className={`text-xs ${t.text} font-mono bg-slate-950 p-2 block border border-slate-800/50`}>
                 {sessionId}
               </code>
             </div>
 
+            <div className="pt-6 border-t border-slate-800/50">
+              <label className="block text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-4">Site Visual Theme</label>
+              <div className="grid grid-cols-5 gap-2">
+                {Object.keys(THEMES).map(themeKey => (
+                  <button
+                    key={themeKey}
+                    onClick={() => {
+                      setSiteTheme(themeKey);
+                      updateSiteTheme(sessionId, themeKey);
+                    }}
+                    className={`h-10 border flex items-center justify-center transition-all ${
+                      siteTheme === themeKey 
+                        ? 'border-white bg-slate-800' 
+                        : 'border-slate-800 bg-slate-950 hover:border-slate-600'
+                    }`}
+                    title={themeKey.toUpperCase()}
+                  >
+                    <div className={`w-4 h-4 rounded-full ${THEMES[themeKey].primary} shadow-sm`}></div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="pt-6 border-t border-slate-800/50 flex flex-col gap-4">
               <div>
-                <label className="block text-[10px] font-mono text-indigo-400 uppercase tracking-widest mb-2 font-bold">Account Security Key</label>
+                <label className="block text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-2 font-bold">Account Security Key</label>
                 <div className="flex gap-2">
                   <input 
                     type="password"
@@ -678,7 +778,7 @@ export default function App() {
                         setIsFirstLogin(false);
                       }
                     }}
-                    className="flex-1 bg-slate-950 border border-slate-800 p-3 text-slate-200 font-mono text-sm focus:border-indigo-500 outline-none transition-all"
+                    className={`flex-1 bg-slate-950 border border-slate-800 p-3 text-slate-200 font-mono text-sm focus:${t.border.replace('border-', 'border-')} outline-none transition-all`}
                   />
                   <button 
                     onClick={(e) => {
@@ -689,7 +789,7 @@ export default function App() {
                         setIsFirstLogin(false);
                       }
                     }}
-                    className="px-4 bg-indigo-600 text-[10px] text-white font-bold uppercase hover:bg-indigo-500 transition-all font-mono"
+                    className={`px-4 ${t.primary} text-[10px] text-white font-bold uppercase ${t.hover} transition-all font-mono`}
                   >
                     UPDATE
                   </button>
@@ -703,7 +803,7 @@ export default function App() {
                   setShowPasswordLogin(!!userProfile?.password);
                   setPendingSession(userProfile?.password ? userProfile : null);
                 }}
-                className="w-full py-3 bg-slate-950 border border-slate-800 text-[10px] font-mono text-slate-400 uppercase tracking-[0.2em] hover:border-red-500/50 hover:text-red-400 transition-all"
+                className={`w-full py-3 bg-slate-950 border border-slate-800 text-[10px] font-mono text-slate-400 uppercase tracking-[0.2em] hover:${t.border} hover:${t.text} transition-all`}
               >
                 Lock Terminal / Change Identity
               </button>
@@ -712,7 +812,7 @@ export default function App() {
 
           {/* Stats View */}
           <div className="lg:col-span-2 bg-slate-900/60 border border-slate-800 p-8">
-            <div className="flex items-center gap-2 text-indigo-400 font-bold uppercase tracking-widest text-xs mb-6">
+            <div className={`flex items-center gap-2 ${t.text} font-bold uppercase tracking-widest text-xs mb-6`}>
               <TrendingUp size={16} /> Engagement Metrics
             </div>
             
@@ -723,7 +823,7 @@ export default function App() {
                </div>
                <div>
                   <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest block mb-1">Top Ranking Activity</span>
-                  <div className="text-sm font-bold text-emerald-400 uppercase truncate">
+                  <div className={`text-sm font-bold ${t.text} uppercase truncate`}>
                     {top3[0]?.game?.title || 'No Activity Logged'}
                   </div>
                </div>
@@ -742,7 +842,7 @@ export default function App() {
                               <div className="text-[9px] font-mono text-slate-600 uppercase">Last Played: {s.lastPlayed?.toDate?.()?.toLocaleDateString() || 'Recently'}</div>
                            </div>
                         </div>
-                        <div className="text-xs font-mono text-indigo-400">{(s.duration / 3600).toFixed(1)}h</div>
+                        <div className={`text-xs font-mono ${t.text}`}>{(s.duration / 3600).toFixed(1)}h</div>
                      </div>
                    ))}
                  </div>
@@ -755,7 +855,7 @@ export default function App() {
                   {playedGamesList.length > 0 ? playedGamesList.map(s => (
                     <div key={s.gameId} className="flex justify-between items-center py-2 border-b border-slate-800/30 text-[10px] font-mono">
                        <span className="text-slate-400 uppercase">{s.game.title}</span>
-                       <span className="text-slate-600">{(s.duration / 60).toFixed(0)}m played</span>
+                       <span className={`text-slate-600 group-hover:${t.text}`}>{(s.duration / 60).toFixed(0)}m played</span>
                     </div>
                   )) : (
                     <div className="text-[10px] font-mono text-slate-700 uppercase">Registry Empty</div>
@@ -766,7 +866,7 @@ export default function App() {
 
           {/* Game Locks */}
           <div className="lg:col-span-3 bg-slate-900/60 border border-slate-800 p-8">
-            <div className="flex items-center gap-2 text-indigo-400 font-bold uppercase tracking-widest text-xs mb-6">
+            <div className={`flex items-center gap-2 ${t.text} font-bold uppercase tracking-widest text-xs mb-6`}>
               <Key size={16} /> Game Security
             </div>
             
@@ -774,10 +874,10 @@ export default function App() {
               {gamesData.map(game => {
                 const isLocked = !!userProfile?.gameLocks?.[game.id];
                 return (
-                  <div key={game.id} className="p-4 bg-slate-950/50 border border-slate-800/50 flex flex-col gap-3 group">
+                  <div key={game.id} className={`p-4 bg-slate-950/50 border border-slate-800/50 flex flex-col gap-3 group transition-all hover:${t.border}`}>
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] font-mono text-white font-bold truncate pr-4">{game.title}</span>
-                      {isLocked && <Lock size={12} className="text-indigo-500" />}
+                      {isLocked && <Lock size={12} className={t.text} />}
                     </div>
                     
                     <div className="flex gap-2">
@@ -792,7 +892,7 @@ export default function App() {
                                 e.target.value = '';
                               }
                             }}
-                            className="flex-1 bg-slate-900 border border-slate-800 p-1.5 text-[10px] font-mono text-slate-300 outline-none focus:border-indigo-500 transition-all"
+                            className={`flex-1 bg-slate-900 border border-slate-800 p-1.5 text-[10px] font-mono text-slate-300 outline-none focus:${t.border.replace('border-', 'border-')} transition-all`}
                           />
                           <button 
                             onClick={(e) => {
@@ -802,7 +902,7 @@ export default function App() {
                                 input.value = '';
                               }
                             }}
-                            className="px-2 bg-indigo-600 text-[9px] text-white font-bold uppercase hover:bg-indigo-500"
+                            className={`px-2 ${t.primary} text-[9px] text-white font-bold uppercase ${t.hover}`}
                           >
                             LOCK
                           </button>
@@ -835,14 +935,14 @@ export default function App() {
       <div className="flex-1 p-6 md:p-10 w-full max-w-6xl mx-auto overflow-y-auto bg-slate-950/30">
         <div className="mb-10 border-b border-slate-800 pb-6 flex items-end justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-none flex items-center justify-center border border-slate-900 bg-indigo-600 shadow-[0_0_15px_rgba(79,70,229,0.4)]">
+            <div className={`w-12 h-12 rounded-none flex items-center justify-center border border-slate-900 ${t.primary} ${t.glow}`}>
               <Lock size={24} className="text-white" />
             </div>
             <div>
               <h1 className="text-3xl md:text-4xl font-black tracking-tighter uppercase text-slate-200 mb-1 leading-none">
-                {isOwner ? 'OWNER PANEL' : 'ADMIN PANEL'}<span className="text-indigo-500">.</span>
+                {isOwner ? 'OWNER PANEL' : 'ADMIN PANEL'}<span className={t.primaryText}>.</span>
               </h1>
-              <p className="text-[10px] font-mono text-indigo-400 tracking-[0.2em] uppercase">
+              <p className={`text-[10px] font-mono ${t.text} tracking-[0.2em] uppercase`}>
                 {isOwner ? 'Full Authority Access' : 'System Configuration & Monitoring'}
               </p>
             </div>
@@ -855,7 +955,7 @@ export default function App() {
         {!isAdminAuthenticated ? (
           <div className="max-w-md mx-auto mt-12 p-8 bg-slate-900/60 border border-slate-800 backdrop-blur-md">
             <h2 className="text-xl font-black uppercase tracking-tight text-white mb-6 flex items-center gap-2">
-              <Lock size={18} className="text-indigo-500" />
+              <Lock size={18} className={t.text} />
               Authorization Required
             </h2>
             <form onSubmit={handleAdminAuth}>
@@ -865,7 +965,7 @@ export default function App() {
                   type="password"
                   value={adminPasswordInput}
                   onChange={(e) => setAdminPasswordInput(e.target.value)}
-                  className={`w-full bg-slate-950 border ${authError ? 'border-red-500' : 'border-slate-800'} p-3 text-slate-200 font-mono text-sm focus:border-indigo-500 outline-none transition-all placeholder:text-slate-700`}
+                  className={`w-full bg-slate-950 border ${authError ? 'border-red-500' : 'border-slate-800'} p-3 text-slate-200 font-mono text-sm focus:${t.border.replace('border-', 'border-')} outline-none transition-all placeholder:text-slate-700`}
                   placeholder="••••••••••••••••"
                 />
                 {authError && (
@@ -874,7 +974,7 @@ export default function App() {
               </div>
               <button
                 type="submit"
-                className="w-full py-3 bg-indigo-600 text-[10px] text-white font-bold uppercase tracking-widest hover:bg-indigo-500 transition-all shadow-[0_0_15px_rgba(79,70,229,0.2)]"
+                className={`w-full py-3 ${t.primary} text-[10px] text-white font-bold uppercase tracking-widest ${t.hover} transition-all ${t.glow}`}
               >
                 Verify Identity
               </button>
@@ -889,18 +989,18 @@ export default function App() {
               </div>
               <div className="bg-slate-900/80 border border-slate-800 p-6 flex flex-col items-center justify-center text-center">
                 <span className="text-[10px] font-mono text-slate-500 uppercase tracking-[0.2em] mb-2">Active Sessions</span>
-                <span className="text-4xl font-black text-indigo-400">{sessions.length}</span>
+                <span className={`text-4xl font-black ${t.text}`}>{sessions.length}</span>
               </div>
               <div className="bg-slate-900/80 border border-slate-800 p-6 flex flex-col items-center justify-center text-center">
                 <span className="text-[10px] font-mono text-slate-500 uppercase tracking-[0.2em] mb-2">Banned Users</span>
-                <span className="text-4xl font-black text-red-400">{bans.length}</span>
+                <span className="text-4xl font-black text-red-500">{bans.length}</span>
               </div>
             </div>
 
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
               {/* Session Manager */}
               <div className="bg-slate-900/60 border border-slate-800 p-6">
-                <h3 className="text-sm font-bold uppercase tracking-widest text-indigo-400 mb-6 flex items-center gap-2">
+                <h3 className={`text-sm font-bold uppercase tracking-widest ${t.text} mb-6 flex items-center gap-2`}>
                   <List size={16} />
                   Session Manager
                 </h3>
@@ -914,15 +1014,15 @@ export default function App() {
                       <div 
                         key={sess.id} 
                         onClick={() => setSelectedUserSess(sess)}
-                        className={`p-4 border transition-all cursor-pointer flex items-center justify-between group ${isSelected ? 'bg-indigo-600/20 border-indigo-500' : 'bg-slate-950/50 border-slate-800/50 hover:border-slate-600'}`}
+                        className={`p-4 border transition-all cursor-pointer flex items-center justify-between group ${isSelected ? `${t.bg} ${t.border}` : 'bg-slate-950/50 border-slate-800/50 hover:border-slate-600'}`}
                       >
                         <div className="flex flex-col gap-1 overflow-hidden">
                           <span className={`${isOwnerSess ? 'text-amber-400' : 'text-white'} text-[10px] font-mono font-bold flex items-center gap-2`}>
                             {sess.username || 'Anonymous'}
                             <span className="text-slate-500 font-normal">({sess.id})</span>
                             {isOwnerSess && <span className="px-1.5 py-0.5 bg-amber-500/20 text-amber-500 text-[8px] rounded-sm border border-amber-500/30 uppercase">OWNER</span>}
-                            {!isOwnerSess && sess.isAdmin && <span className="px-1.5 py-0.5 bg-indigo-500/20 text-indigo-400 text-[8px] rounded-sm border border-indigo-500/30 uppercase">ADMIN</span>}
-                            {isCurrent && <span className="px-1.5 py-0.5 bg-indigo-500/20 text-indigo-400 text-[8px] rounded-sm uppercase">YOU</span>}
+                            {!isOwnerSess && sess.isAdmin && <span className={`px-1.5 py-0.5 ${t.bg} ${t.text} text-[8px] rounded-sm border ${t.border} uppercase`}>ADMIN</span>}
+                            {isCurrent && <span className={`px-1.5 py-0.5 ${t.bg} ${t.text} text-[8px] rounded-sm uppercase`}>YOU</span>}
                           </span>
                           <span className="text-[9px] font-mono text-slate-500 uppercase truncate max-w-[200px]">
                             {sess.userAgent}
@@ -946,7 +1046,7 @@ export default function App() {
 
               {/* Inspector View */}
               <div className="bg-slate-900/60 border border-slate-800 p-6">
-                <h3 className="text-sm font-bold uppercase tracking-widest text-emerald-400 mb-6 flex items-center gap-2">
+                <h3 className={`text-sm font-bold uppercase tracking-widest ${t.text} mb-6 flex items-center gap-2`}>
                   <User size={16} />
                   Identity Inspector
                 </h3>
@@ -966,17 +1066,17 @@ export default function App() {
                        </div>
                        <div className="p-3 bg-slate-950 border border-slate-800">
                           <span className="text-[8px] font-mono text-slate-500 uppercase block mb-1">Session Token</span>
-                          <div className="text-xs font-mono text-indigo-400 truncate">{displaySess.id}</div>
+                          <div className={`text-xs font-mono ${t.text} truncate`}>{displaySess.id}</div>
                        </div>
                        <div className="p-3 bg-slate-950 border border-slate-800">
                           <span className="text-[8px] font-mono text-slate-500 uppercase block mb-1">Security Cipher</span>
-                          <div className="text-xs font-mono text-indigo-400">
+                          <div className={`text-xs font-mono ${t.text}`}>
                              {displaySess.id === OWNER_ID ? 'HIDDEN_ADMIN_RESERVED' : (displaySess.password || 'UNSECURED')}
                           </div>
                        </div>
                        <div className="p-3 bg-slate-950 border border-slate-800">
                           <span className="text-[8px] font-mono text-slate-500 uppercase block mb-1">Connection Status</span>
-                          <div className={`text-xs font-black uppercase ${displaySess.isOnline ? 'text-emerald-400' : 'text-slate-600'}`}>
+                          <div className={`text-xs font-black uppercase ${displaySess.isOnline ? t.text : 'text-slate-600'}`}>
                             {displaySess.isOnline ? 'ONLINE' : 'OFFLINE'}
                           </div>
                        </div>
@@ -994,7 +1094,7 @@ export default function App() {
                                 .map((s, idx) => (
                                   <div key={idx} className="flex justify-between items-center text-[10px] font-mono">
                                      <span className="text-slate-400 uppercase">{s.game.title}</span>
-                                     <span className="text-indigo-400">{(s.duration / 60).toFixed(0)}m</span>
+                                     <span className={t.text}>{(s.duration / 60).toFixed(0)}m</span>
                                   </div>
                                 ))}
                            </div>
@@ -1005,11 +1105,11 @@ export default function App() {
 
                     {/* Audit Logs */}
                     <div className="p-4 bg-slate-950 border border-slate-800">
-                        <span className="text-[8px] font-mono text-emerald-500 uppercase block mb-3 border-b border-slate-800 pb-1 font-black">Audit Logs</span>
+                        <span className={`text-[8px] font-mono ${t.text} uppercase block mb-3 border-b border-slate-800 pb-1 font-black`}>Audit Logs</span>
                         <div className="space-y-3 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
                            {auditLogs.length > 0 ? auditLogs.map(log => (
-                             <div key={log.id} className="text-[9px] font-mono border-l border-emerald-900/50 pl-2 py-1">
-                                <div className="text-emerald-400 font-bold uppercase">{log.action}</div>
+                             <div key={log.id} className={`text-[9px] font-mono border-l ${t.border} pl-2 py-1`}>
+                                <div className={`${t.text} font-bold uppercase`}>{log.action}</div>
                                 <div className="text-slate-400 leading-tight uppercase">{log.details}</div>
                                 <div className="text-slate-600 text-[8px] mt-1">{log.timestamp?.toDate?.()?.toLocaleString() || '---'}</div>
                              </div>
@@ -1021,8 +1121,8 @@ export default function App() {
                     
                     {/* Admin Privilege Management (Owner Only) */}
                     {sessionId === OWNER_ID && displaySess.id !== OWNER_ID && (
-                      <div className="p-4 bg-slate-950 border border-indigo-900/30">
-                        <span className="text-[8px] font-mono text-indigo-400 uppercase block mb-3 border-b border-indigo-900/30 pb-1 font-bold">Privilege Escalation</span>
+                      <div className="p-4 bg-slate-950 border border-slate-800/30">
+                        <span className={`text-[8px] font-mono ${t.text} uppercase block mb-3 border-b ${t.border} pb-1 font-bold`}>Privilege Escalation</span>
                         <div className="space-y-4">
                           <div className="flex items-center justify-between">
                             <div className="flex flex-col">
@@ -1037,7 +1137,7 @@ export default function App() {
                                   grantAdminPrivileges(displaySess.id, { banUser: false, viewUser: false, fullAccess: false });
                                 }
                               }}
-                              className={`px-3 py-1 text-[8px] font-mono border ${displaySess.isAdmin ? 'border-red-500 text-red-500 bg-red-500/10' : 'border-indigo-500 text-indigo-500 bg-indigo-500/10'} uppercase transition-all`}
+                              className={`px-3 py-1 text-[8px] font-mono border ${displaySess.isAdmin ? 'border-red-500 text-red-500 bg-red-500/10' : `border-${t.accent} ${t.text} ${t.bg}`} uppercase transition-all`}
                             >
                               {displaySess.isAdmin ? 'REVOKE' : 'GRANT'}
                             </button>
@@ -1092,7 +1192,7 @@ export default function App() {
             {/* Ban Registry */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               <div className="bg-slate-900/60 border border-slate-800 p-6">
-                <h3 className="text-sm font-bold uppercase tracking-widest text-red-400 mb-6 flex items-center gap-2">
+                <h3 className="text-sm font-bold uppercase tracking-widest text-red-500 mb-6 flex items-center gap-2">
                   <ShieldCheck size={16} />
                   Registry of Forbidden Identities
                 </h3>
@@ -1100,7 +1200,7 @@ export default function App() {
                   {bans.length > 0 ? bans.map(ban => (
                     <div key={ban.id} className="p-4 bg-red-950/10 border border-red-900/20 flex items-center justify-between group">
                       <div className="flex flex-col gap-1 overflow-hidden">
-                        <span className="text-[10px] font-mono text-red-400 font-bold">
+                        <span className="text-[10px] font-mono text-red-500 font-bold">
                           {sessions.find(s => s.id === ban.id)?.username || 'Banned Operator'} 
                           <span className="text-slate-600 font-normal ml-2">({ban.id})</span>
                         </span>
@@ -1127,22 +1227,22 @@ export default function App() {
 
               {hasPrivilege('fullAccess') && (
                 <div className="bg-slate-900/60 border border-slate-800 p-8">
-                  <h3 className="text-sm font-bold uppercase tracking-widest text-indigo-400 mb-6 flex items-center gap-2">
+                  <h3 className={`text-sm font-bold uppercase tracking-widest ${t.text} mb-6 flex items-center gap-2`}>
                     <Info size={16} />
                     System Configuration
                   </h3>
                   <div className="space-y-4 font-mono text-[11px]">
                     <div className="flex justify-between border-b border-slate-800/50 pb-2">
                       <span className="text-slate-500 uppercase">Core Logic</span>
-                      <span className="text-emerald-400">OPERATIONAL</span>
+                      <span className={t.text}>OPERATIONAL</span>
                     </div>
                     <div className="flex justify-between border-b border-slate-800/50 pb-2">
                       <span className="text-slate-500 uppercase">Database Link</span>
-                      <span className="text-emerald-400">ENCRYPTED</span>
+                      <span className={t.text}>ENCRYPTED</span>
                     </div>
                     <div className="flex justify-between border-b border-slate-800/50 pb-2">
                       <span className="text-slate-500 uppercase">Admin Access</span>
-                      <span className={`${isOwner ? 'text-emerald-400' : 'text-indigo-400'} font-bold`}>
+                      <span className={`${isOwner ? t.text : t.text} font-bold`}>
                         {isOwner ? 'OWNER_VERIFIED' : 'AUTHORIZED'}
                       </span>
                     </div>
@@ -1175,16 +1275,16 @@ export default function App() {
     <div className="flex-1 p-6 md:p-10 w-full max-w-6xl mx-auto overflow-y-auto bg-slate-950/30">
       <div className="mb-10 border-b border-slate-800 pb-6 flex items-end justify-between">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-none flex overflow-hidden border border-slate-900 shadow-[0_0_15px_rgba(79,70,229,0.4)]">
+          <div className={`w-12 h-12 rounded-none flex overflow-hidden border border-slate-900 ${t.glow}`}>
             <div className="w-1/2 h-full bg-white"></div>
-            <div className="w-1/2 h-full bg-indigo-600"></div>
+            <div className={`w-1/2 h-full ${t.primary}`}></div>
           </div>
           <div>
             <h1 className="text-3xl md:text-4xl font-black tracking-tighter uppercase text-slate-200 mb-1 leading-none">
-              PROXIES<span className="text-indigo-500">.</span>
+              PROXIES<span className={t.primaryText}>.</span>
             </h1>
             <div className="flex items-center gap-4">
-              <p className="text-[10px] font-mono text-indigo-400 tracking-[0.2em] uppercase">
+              <p className={`text-[10px] font-mono ${t.text} tracking-[0.2em] uppercase`}>
                 {proxiesData.length} proxies available
               </p>
               <div className="h-4 w-px bg-slate-800 hidden sm:block"></div>
@@ -1192,10 +1292,10 @@ export default function App() {
                 href="https://forms.gle/tfs9dLpsjz1jBhjZ6"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 px-2 py-0.5 bg-indigo-500/10 border border-indigo-500/20 rounded-sm hover:bg-indigo-600/20 transition-all group"
+                className={`flex items-center gap-2 px-2 py-0.5 ${t.bg} border ${t.border} rounded-sm hover:bg-slate-800 transition-all group`}
               >
-                <MessageSquarePlus size={10} className="text-indigo-400 group-hover:text-indigo-300" />
-                <span className="text-[9px] font-mono text-indigo-200 font-bold tracking-wider uppercase">REQUEST NODE</span>
+                <MessageSquarePlus size={10} className={`${t.text} group-hover:text-white`} />
+                <span className={`text-[9px] font-mono ${t.text} font-bold tracking-wider uppercase`}>REQUEST NODE</span>
               </a>
             </div>
           </div>
@@ -1210,10 +1310,10 @@ export default function App() {
           {proxiesData.map((proxy) => (
             <div
               key={proxy.id}
-              className="bg-slate-900/60 backdrop-blur-sm border border-slate-800 p-6 flex flex-col group transition-all hover:border-indigo-500/50 hover:bg-indigo-500/10"
+              className={`bg-slate-900/60 backdrop-blur-sm border border-slate-800 p-6 flex flex-col group transition-all hover:${t.border} hover:${t.bg}`}
             >
               <div className="flex justify-between items-start mb-4">
-                <h2 className="text-lg font-black uppercase tracking-tight text-white group-hover:text-indigo-400 transition-colors">
+                <h2 className={`text-lg font-black uppercase tracking-tight text-white group-hover:${t.text} transition-colors`}>
                   {proxy.name}
                 </h2>
                 <div className="px-2 py-1 bg-slate-950 text-[8px] font-mono text-emerald-400 border border-emerald-900/30 uppercase">
@@ -1225,7 +1325,7 @@ export default function App() {
               </p>
               <button
                 onClick={() => setActiveItem({ ...proxy, type: 'proxy' })}
-                className="mt-auto flex items-center justify-center gap-2 py-3 bg-indigo-600 text-[10px] text-white font-bold uppercase tracking-widest hover:bg-indigo-500 transition-all shadow-[0_0_15px_rgba(79,70,229,0.2)] cursor-pointer"
+                className={`mt-auto flex items-center justify-center gap-2 py-3 ${t.primary} text-[10px] text-white font-bold uppercase tracking-widest ${t.hover} transition-all ${t.glow} cursor-pointer`}
               >
                 <Globe size={14} />
                 Access Node (Internal)
@@ -1240,7 +1340,7 @@ export default function App() {
           </div>
           <h2 className="text-xl font-bold text-slate-400 mb-2 uppercase tracking-tight">No Proxy Nodes Found</h2>
           <p className="text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
-            The proxy registry is currently empty. You can add your own custom proxy nodes by updating the <code className="text-indigo-400 px-1 font-mono">proxies.json</code> data file.
+            The proxy registry is currently empty. You can add your own custom proxy nodes by updating the <code className={`${t.text} px-1 font-mono`}>proxies.json</code> data file.
           </p>
         </div>
       )}
@@ -1309,14 +1409,14 @@ export default function App() {
           </div>
           
           <div className="flex items-center gap-4 mb-8">
-            <div className="w-10 h-10 border border-indigo-500 flex items-center justify-center bg-indigo-500/10">
-              <User size={20} className="text-indigo-500" />
+            <div className={`w-10 h-10 border ${t.border.replace('border-', 'border-')} flex items-center justify-center ${t.bg}`}>
+              <User size={20} className={t.text} />
             </div>
             <div>
               <h1 className="text-2xl font-black uppercase tracking-tighter text-white leading-none">
                 {userProfile?.username ? `Welcome Back to Nebula Network ${userProfile.username}` : 'Welcome to Nebula Network'}
               </h1>
-              <p className="text-[9px] font-mono text-indigo-400 uppercase tracking-[0.2em] mt-1">
+              <p className={`text-[9px] font-mono ${t.text} uppercase tracking-[0.2em] mt-1`}>
                 {userProfile?.username ? 'Personnel Verification' : 'New Node Initialization'}
               </p>
             </div>
@@ -1325,7 +1425,7 @@ export default function App() {
           {!showPasswordLogin && !userProfile?.agreedSiteRules ? (
             <div className="relative z-10">
               <div className="mb-6 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
-                <h3 className="text-xs font-mono font-black text-indigo-400 uppercase mb-4 sticky top-0 bg-slate-900/80 py-1">Nebula Protocol Agreement</h3>
+                <h3 className={`text-xs font-mono font-black ${t.text} uppercase mb-4 sticky top-0 bg-slate-900/80 py-1`}>Nebula Protocol Agreement</h3>
                 <div className="space-y-4">
                   {SITE_RULES.map(rule => (
                     <div key={rule.id} className="p-3 bg-slate-950 border border-slate-800">
@@ -1338,7 +1438,7 @@ export default function App() {
               </div>
               <button
                 onClick={() => setAgreedSiteRules(sessionId)}
-                className="w-full py-4 bg-emerald-600 text-[10px] text-white font-bold uppercase tracking-[0.3em] hover:bg-emerald-500 transition-all shadow-[0_0_20px_rgba(16,185,129,0.3)]"
+                className={`w-full py-4 ${t.primary} text-[10px] text-white font-bold uppercase tracking-[0.3em] ${t.hover} transition-all ${t.glow}`}
               >
                 Accept Protocols
               </button>
@@ -1353,7 +1453,7 @@ export default function App() {
                   required
                   value={nameInput}
                   onChange={(e) => setNameInput(e.target.value)}
-                  className={`w-full bg-slate-950 border ${nameError ? 'border-red-500' : 'border-slate-800'} p-4 text-slate-200 font-mono text-sm focus:border-indigo-500 outline-none transition-all placeholder:text-slate-800`}
+                  className={`w-full bg-slate-950 border ${nameError ? 'border-red-500' : 'border-slate-800'} p-4 text-slate-200 font-mono text-sm focus:${t.border.replace('border-', 'border-')} outline-none transition-all placeholder:text-slate-800`}
                   placeholder="Enter Username..."
                   maxLength={20}
                 />
@@ -1369,7 +1469,7 @@ export default function App() {
 
               <button
                 type="submit"
-                className="w-full py-4 bg-indigo-600 text-[10px] text-white font-bold uppercase tracking-[0.3em] hover:bg-indigo-500 transition-all shadow-[0_0_20px_rgba(79,70,229,0.3)] flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed group"
+                className={`w-full py-4 ${t.primary} text-[10px] text-white font-bold uppercase tracking-[0.3em] ${t.hover} transition-all ${t.glow} flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed group`}
                 disabled={nameInput.trim().length < 2 || isSubmittingName}
               >
                 {isSubmittingName ? 'INITIALIZING...' : 'Initialize Session'}
@@ -1384,13 +1484,13 @@ export default function App() {
                   <button 
                     type="button"
                     onClick={() => setShowPasswordLogin(false)}
-                    className="text-[9px] font-mono text-indigo-400 uppercase underline bg-transparent border-none p-0"
+                    className={`text-[9px] font-mono ${t.text} uppercase underline bg-transparent border-none p-0`}
                   >
                     Change Name
                   </button>
                 </div>
                 <p className="text-xs text-white font-bold mb-4 font-mono uppercase tracking-tight">
-                  {pendingSession.isNew ? 'Create Security Key for' : 'Verify Identity for'}: <span className="text-indigo-400">{pendingSession.username}</span>
+                  {pendingSession.isNew ? 'Create Security Key for' : 'Verify Identity for'}: <span className={t.text}>{pendingSession.username}</span>
                 </p>
                 <input
                   type="password"
@@ -1398,7 +1498,7 @@ export default function App() {
                   required
                   value={loginPasswordInput}
                   onChange={(e) => setLoginPasswordInput(e.target.value)}
-                  className={`w-full bg-slate-950 border ${nameError ? 'border-red-500' : 'border-slate-800'} p-4 text-slate-200 font-mono text-sm focus:border-indigo-500 outline-none transition-all placeholder:text-slate-800`}
+                  className={`w-full bg-slate-950 border ${nameError ? 'border-red-500' : 'border-slate-800'} p-4 text-slate-200 font-mono text-sm focus:${t.border.replace('border-', 'border-')} outline-none transition-all placeholder:text-slate-800`}
                   placeholder={pendingSession.isNew ? "Create Account Password..." : "Enter Security Key..."}
                 />
                 {nameError && (
@@ -1416,7 +1516,7 @@ export default function App() {
               <button
                 type="submit"
                 disabled={isSubmittingName || loginPasswordInput.length === 0}
-                className="w-full py-4 bg-indigo-600 text-[10px] text-white font-bold uppercase tracking-[0.3em] hover:bg-indigo-500 transition-all shadow-[0_0_20px_rgba(79,70,229,0.3)] flex items-center justify-center gap-3 disabled:opacity-50"
+                className={`w-full py-4 ${t.primary} text-[10px] text-white font-bold uppercase tracking-[0.3em] ${t.hover} transition-all ${t.glow} flex items-center justify-center gap-3 disabled:opacity-50`}
               >
                 {isSubmittingName ? 'VERIFYING...' : (pendingSession.isNew ? 'Initialize Security' : 'De-Encrypt & Join')}
                 {!isSubmittingName && <ShieldCheck size={14} />}
@@ -1447,7 +1547,7 @@ export default function App() {
             <Star 
               key={i} 
               size={size} 
-              className={`${isActive ? 'text-amber-400 fill-amber-400' : 'text-slate-700' } ${onRate ? 'cursor-pointer hover:scale-125 transition-transform' : ''}`}
+              className={`${isActive ? `${t.text} fill-current` : 'text-slate-700' } ${onRate ? 'cursor-pointer hover:scale-125 transition-transform' : ''}`}
               onClick={() => onRate && onRate(starValue)}
             />
           );
@@ -1537,14 +1637,14 @@ export default function App() {
              </div>
              
             <div className="flex items-center gap-4 mb-8">
-              <div className="w-10 h-10 border border-indigo-500 flex items-center justify-center bg-indigo-500/10">
-                <Lock size={20} className="text-indigo-500" />
+              <div className={`w-10 h-10 border ${t.border.replace('border-', 'border-')} flex items-center justify-center ${t.bg}`}>
+                <Lock size={20} className={t.text} />
               </div>
               <h2 className="text-2xl font-black uppercase tracking-tighter text-white leading-none">Access Restricted</h2>
             </div>
             
             <p className="text-[10px] font-mono text-slate-400 uppercase tracking-widest mb-6">
-              The game <span className="text-indigo-400">"{lockedGameAttempt.title}"</span> is currently secured by a personal cipher.
+              The game <span className={t.text}>"{lockedGameAttempt.title}"</span> is currently secured by a personal cipher.
             </p>
 
             <form onSubmit={handleLockVerify} className="relative z-10">
@@ -1555,7 +1655,7 @@ export default function App() {
                   autoFocus
                   value={lockPasswordInput}
                   onChange={(e) => setLockPasswordInput(e.target.value)}
-                  className={`w-full bg-slate-950 border ${lockError ? 'border-red-500' : 'border-slate-800'} p-3 text-slate-200 font-mono text-sm focus:border-indigo-500 outline-none transition-all placeholder:text-slate-800`}
+                  className={`w-full bg-slate-950 border ${lockError ? 'border-red-500' : 'border-slate-800'} p-3 text-slate-200 font-mono text-sm focus:${t.border.replace('border-', 'border-')} outline-none transition-all placeholder:text-slate-800`}
                   placeholder="••••••••"
                 />
                 {lockError && (
@@ -1573,7 +1673,7 @@ export default function App() {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-3 bg-indigo-600 text-[10px] text-white font-bold uppercase tracking-widest hover:bg-indigo-500 transition-all shadow-[0_0_20px_rgba(79,70,229,0.2)]"
+                  className={`flex-1 py-3 ${t.primary} text-[10px] text-white font-bold uppercase tracking-widest ${t.hover} transition-all ${t.glow}`}
                 >
                   DECRYPT
                 </button>
@@ -1584,7 +1684,7 @@ export default function App() {
       )}
       {/* Header marquee */}
       <header className="h-12 border-b border-slate-800 bg-slate-900/50 flex items-center overflow-hidden shrink-0 z-50">
-        <div className="marquee-track text-[10px] font-bold tracking-widest uppercase text-indigo-400">
+        <div className={`marquee-track text-[10px] font-bold tracking-widest uppercase ${t.text}`}>
           <span className="px-6">/// Nebula Games Portal ///</span>
           <span className="px-6 text-slate-500">Nebula Network™</span>
           <span className="px-6">/// Nebula Games Portal ///</span>
@@ -1602,35 +1702,35 @@ export default function App() {
         <nav className="w-16 md:w-20 border-r border-slate-800 bg-slate-950/40 backdrop-blur-sm flex flex-col items-center py-8 shrink-0 z-40">
           <button
             onClick={() => handleSidebarClick('games')}
-            className={`p-4 transition-all ${activeTab === 'games' ? 'text-indigo-500 scale-110 shadow-[0_0_15px_rgba(79,70,229,0.2)]' : 'text-slate-600 hover:text-slate-400'}`}
+            className={`p-4 transition-all ${activeTab === 'games' ? `${t.text} scale-110 ${t.glow}` : 'text-slate-600 hover:text-slate-400'}`}
             title="Games"
           >
             <Gamepad2 size={24} strokeWidth={activeTab === 'games' ? 3 : 2} />
           </button>
           <button
             onClick={() => handleSidebarClick('proxies')}
-            className={`p-4 mt-4 transition-all ${activeTab === 'proxies' ? 'text-emerald-500 scale-110 shadow-[0_0_15px_rgba(16,185,129,0.2)]' : 'text-slate-600 hover:text-slate-400'}`}
+            className={`p-4 mt-4 transition-all ${activeTab === 'proxies' ? `${t.text} scale-110 ${t.glow}` : 'text-slate-600 hover:text-slate-400'}`}
             title="Proxies"
           >
             <ShieldCheck size={24} strokeWidth={activeTab === 'proxies' ? 3 : 2} />
           </button>
           <button
             onClick={() => handleSidebarClick('chat')}
-            className={`p-4 mt-4 transition-all ${activeTab === 'chat' ? 'text-amber-500 scale-110 shadow-[0_0_15px_rgba(245,158,11,0.2)]' : 'text-slate-600 hover:text-slate-400'}`}
+            className={`p-4 mt-4 transition-all ${activeTab === 'chat' ? `${t.text} scale-110 ${t.glow}` : 'text-slate-600 hover:text-slate-400'}`}
             title="Chat"
           >
             <MessageSquare size={24} strokeWidth={activeTab === 'chat' ? 3 : 2} />
           </button>
           <button
             onClick={() => handleSidebarClick('profile')}
-            className={`p-4 mt-4 transition-all ${activeTab === 'profile' ? 'text-indigo-400 scale-110 shadow-[0_0_15px_rgba(129,140,248,0.2)]' : 'text-slate-600 hover:text-slate-400'}`}
+            className={`p-4 mt-4 transition-all ${activeTab === 'profile' ? `${t.text} scale-110 ${t.glow}` : 'text-slate-600 hover:text-slate-400'}`}
             title="Profile"
           >
             <User size={24} strokeWidth={activeTab === 'profile' ? 3 : 2} />
           </button>
           <button
             onClick={() => handleSidebarClick('admin')}
-            className={`p-4 mt-4 transition-all ${activeTab === 'admin' ? 'text-indigo-500 scale-110 shadow-[0_0_15px_rgba(79,70,229,0.2)]' : 'text-slate-600 hover:text-slate-400'}`}
+            className={`p-4 mt-4 transition-all ${activeTab === 'admin' ? `${t.text} scale-110 ${t.glow}` : 'text-slate-600 hover:text-slate-400'}`}
             title="Admin"
           >
             <Lock size={24} strokeWidth={activeTab === 'admin' ? 3 : 2} />
@@ -1643,39 +1743,39 @@ export default function App() {
             <div className="flex-1 p-6 md:p-10 w-full max-w-6xl mx-auto overflow-y-auto bg-slate-950/20">
                 <div className="mb-10 border-b border-slate-800 pb-6 flex flex-col md:flex-row md:items-end justify-between gap-6">
                   <div className="flex items-center gap-4">
-                     <div className="w-12 h-12 rounded-none flex overflow-hidden border border-slate-900 shadow-[0_0_15px_rgba(79,70,229,0.4)]">
-                       <div className="w-1/2 h-full bg-white"></div>
-                       <div className="w-1/2 h-full bg-indigo-600"></div>
+                <div className={`w-12 h-12 rounded-none flex overflow-hidden border border-slate-900 ${t.glow}`}>
+                  <div className="w-1/2 h-full bg-white"></div>
+                  <div className={`w-1/2 h-full ${t.primary}`}></div>
+                </div>
+                <div>
+                 <h1 className="text-3xl md:text-4xl font-black tracking-tighter uppercase text-slate-200 mb-1 leading-none">
+                   GAMES<span className={t.primaryText}>.</span>
+                 </h1>
+                 <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                   <p className={`text-[10px] font-mono ${t.text} tracking-[0.2em] uppercase`}>
+                     {gamesData.length} games available
+                   </p>
+                   <div className="h-4 w-px bg-slate-800 hidden sm:block"></div>
+                   <div className="flex items-center gap-3">
+                     <div className={`flex items-center gap-2 px-2 py-0.5 ${t.bg} border ${t.border} rounded-sm`}>
+                       <TrendingUp size={10} className={t.text} />
+                       <span className={`text-[10px] font-mono ${t.text} font-bold tracking-wider`}>
+                         {visitCount.toLocaleString()} VISITS
+                       </span>
                      </div>
-                     <div>
-                      <h1 className="text-3xl md:text-4xl font-black tracking-tighter uppercase text-slate-200 mb-1 leading-none">
-                        GAMES<span className="text-indigo-500">.</span>
-                      </h1>
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-                        <p className="text-[10px] font-mono text-indigo-400 tracking-[0.2em] uppercase">
-                          {gamesData.length} games available
-                        </p>
-                        <div className="h-4 w-px bg-slate-800 hidden sm:block"></div>
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-2 px-2 py-0.5 bg-indigo-500/10 border border-indigo-500/20 rounded-sm">
-                            <TrendingUp size={10} className="text-indigo-400" />
-                            <span className="text-[10px] font-mono text-indigo-200 font-bold tracking-wider">
-                              {visitCount.toLocaleString()} VISITS
-                            </span>
-                          </div>
-                          <div className="h-4 w-px bg-slate-800 hidden sm:block"></div>
-                          <a 
-                            href="https://forms.gle/tfs9dLpsjz1jBhjZ6"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-2 px-2 py-0.5 bg-indigo-500/10 border border-indigo-500/20 rounded-sm hover:bg-indigo-600/20 transition-all group"
-                          >
-                            <MessageSquarePlus size={10} className="text-indigo-400 group-hover:text-indigo-300" />
-                            <span className="text-[9px] font-mono text-indigo-200 font-bold tracking-wider uppercase">REQUEST GAME</span>
-                          </a>
-                        </div>
-                      </div>
-                    </div>
+                     <div className="h-4 w-px bg-slate-800 hidden sm:block"></div>
+                     <a 
+                       href="https://forms.gle/tfs9dLpsjz1jBhjZ6"
+                       target="_blank"
+                       rel="noopener noreferrer"
+                       className={`flex items-center gap-2 px-2 py-0.5 ${t.bg} border ${t.border} rounded-sm hover:bg-slate-800 transition-all group`}
+                     >
+                       <MessageSquarePlus size={10} className={`${t.text} group-hover:text-white`} />
+                       <span className={`text-[9px] font-mono ${t.text} font-bold tracking-wider uppercase`}>REQUEST GAME</span>
+                     </a>
+                   </div>
+                 </div>
+               </div>
                   </div>
                   <div className="flex items-center gap-4 w-full md:w-auto">
                     <div className="relative w-full md:w-64">
@@ -1685,7 +1785,7 @@ export default function App() {
                         placeholder="SEARCH GAMES..."
                         value={gameSearchQuery}
                         onChange={(e) => setGameSearchQuery(e.target.value)}
-                        className="bg-slate-900 border border-slate-800 py-2 pl-10 pr-4 text-[10px] font-mono text-slate-200 focus:border-indigo-500 outline-none transition-all w-full uppercase tracking-tighter"
+                        className={`bg-slate-900 border border-slate-800 py-2 pl-10 pr-4 text-[10px] font-mono text-slate-200 focus:${t.border.replace('border-', 'border-')} outline-none transition-all w-full uppercase tracking-tighter`}
                       />
                     </div>
                     <div className="hidden md:block">
@@ -1719,27 +1819,27 @@ export default function App() {
                       <button
                         key={game.id}
                         onClick={() => handleGameSelect({ ...game, type: 'game' })}
-                        className="bg-slate-900/60 backdrop-blur-sm border border-slate-800 p-2 flex flex-col text-left group cursor-pointer transition-all hover:border-indigo-500/50 hover:bg-indigo-500/10 h-full relative"
+                        className={`bg-slate-900/60 backdrop-blur-sm border border-slate-800 p-2 flex flex-col text-left group cursor-pointer transition-all hover:${t.border} hover:${t.bg} h-full relative`}
                       >
                         <div className="w-full bg-slate-800 mb-3 relative overflow-hidden aspect-video flex justify-center items-center shadow-inner">
-                          <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/20 to-transparent"></div>
+                          <div className={`absolute inset-0 bg-gradient-to-br ${t.bg} opacity-20`}></div>
                           
-                          <div className="absolute -right-2 -bottom-2 font-black text-6xl text-slate-700/20 z-0 leading-none group-hover:text-indigo-500/20 transition-colors">
+                          <div className={`absolute -right-2 -bottom-2 font-black text-6xl text-slate-700/20 z-0 leading-none group-hover:${t.text.replace('text-', 'text-')}/20 transition-colors`}>
                             {String(index + 1).padStart(2, '0')}
                           </div>
                           
-                          <span className="absolute bottom-2 left-2 px-2 py-1 bg-slate-950/80 text-[9px] font-mono text-indigo-300 uppercase z-10 border border-indigo-900/30 shadow-sm">
+                          <span className={`absolute bottom-2 left-2 px-2 py-1 bg-slate-950/80 text-[9px] font-mono ${t.text} uppercase z-10 border border-slate-800 shadow-sm`}>
                             {game.genre}
                           </span>
 
                           <div className="absolute top-2 left-2 flex items-center gap-1.5 px-1.5 py-0.5 bg-slate-950/60 backdrop-blur-sm border border-slate-800/50 rounded-sm">
-                            <Star size={10} className="text-amber-400 fill-amber-400" />
-                            <span className="text-[9px] font-mono text-amber-200">{avgRating > 0 ? avgRating.toFixed(1) : '---'}</span>
+                            <Star size={10} className={`${t.text} fill-current`} />
+                            <span className="text-[9px] font-mono text-slate-200">{avgRating > 0 ? avgRating.toFixed(1) : '---'}</span>
                           </div>
 
                           {isLocked && (
-                            <div className="absolute top-2 right-2 p-1 bg-indigo-900/80 border border-indigo-500/50 rounded-sm z-20">
-                              <Lock size={10} className="text-indigo-300" />
+                            <div className={`absolute top-2 right-2 p-1 ${t.bg} border ${t.border} rounded-sm z-20`}>
+                              <Lock size={10} className={t.text} />
                             </div>
                           )}
                         </div>
@@ -1753,7 +1853,7 @@ export default function App() {
                             By {game.developer}
                           </p>
                           
-                          <div className="mt-auto flex items-center gap-2 text-[10px] text-indigo-500 font-bold uppercase tracking-widest group-hover:text-indigo-400 transition-colors">
+                          <div className={`mt-auto flex items-center gap-2 text-[10px] ${t.text} font-bold uppercase tracking-widest group-hover:text-white transition-colors`}>
                             {isLocked ? <Lock size={12} /> : <Play className="fill-current" size={12} />}
                             {isLocked ? 'Verify Access' : 'Launch Game'}
                           </div>
@@ -1788,14 +1888,14 @@ export default function App() {
                         <div className="flex gap-2">
                           <button 
                             onClick={handleCloseItem}
-                            className="flex items-center justify-center w-8 h-8 bg-slate-900 border border-slate-700 hover:border-indigo-500 text-slate-400 hover:text-indigo-400 transition-colors shadow-sm cursor-pointer"
+                            className={`flex items-center justify-center w-8 h-8 bg-slate-900 border border-slate-700 hover:${t.border} text-slate-400 hover:${t.text} transition-colors shadow-sm cursor-pointer`}
                             title="Go Back"
                           >
                             <ArrowLeft size={16} />
                           </button>
                           <button 
                             onClick={toggleFullscreen}
-                            className="flex items-center justify-center w-8 h-8 bg-slate-900 border border-slate-700 hover:border-indigo-500 text-slate-400 hover:text-indigo-400 transition-colors shadow-sm cursor-pointer"
+                            className={`flex items-center justify-center w-8 h-8 bg-slate-900 border border-slate-700 hover:${t.border} text-slate-400 hover:${t.text} transition-colors shadow-sm cursor-pointer`}
                             title="Fullscreen"
                           >
                             <Maximize size={16} />
@@ -1804,7 +1904,7 @@ export default function App() {
                             href={activeItem.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center justify-center w-8 h-8 bg-indigo-900/30 border border-indigo-700/50 hover:bg-indigo-600 hover:border-indigo-500 text-indigo-400 hover:text-white transition-all shadow-sm cursor-pointer"
+                            className={`flex items-center justify-center w-8 h-8 ${t.bg} border ${t.border} hover:${t.primary} hover:border-transparent text-slate-300 hover:text-white transition-all shadow-sm cursor-pointer`}
                             title="Open in New Tab (Fallback)"
                           >
                             <ExternalLink size={14} />
@@ -1832,7 +1932,7 @@ export default function App() {
                           </div>
                         )}
                         <div className="flex items-center gap-3 text-[10px] text-slate-500 font-mono tracking-widest uppercase">
-                          <Info size={14} className="text-indigo-500" />
+                          <Info size={14} className={t.text} />
                           <span>{activeItem.genre || 'Secure Node'}</span>
                           <span className="text-slate-700">//</span>
                           <span>{activeItem.developer || activeItem.id}</span>
@@ -1842,9 +1942,9 @@ export default function App() {
                     
                     <div 
                       ref={iframeContainerRef}
-                      className="flex-1 w-full border border-slate-800 relative bg-slate-900 p-1 shadow-[0_0_20px_rgba(79,70,229,0.05)] overflow-hidden"
+                      className={`flex-1 w-full border border-slate-800 relative bg-slate-900 p-1 ${t.glow.replace('shadow-[', 'shadow-[0_0_20px_')} overflow-hidden`}
                     >
-                      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-indigo-500/50 to-transparent z-10 pointer-events-none"></div>
+                      <div className={`absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-${t.accent}-500/50 to-transparent z-10 pointer-events-none`}></div>
                       <iframe 
                         src={activeItem.url} 
                         className="w-full h-full bg-slate-950 block border-0"

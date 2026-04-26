@@ -177,6 +177,15 @@ export const setUserPassword = async (sessionId, password) => {
   }
 };
 
+export const updateSiteTheme = async (sessionId, theme) => {
+  const sessionRef = doc(db, 'sessions', sessionId);
+  try {
+    await setDoc(sessionRef, { siteTheme: theme }, { merge: true });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, `sessions/${sessionId}`);
+  }
+};
+
 export const saveGameProgress = async (sessionId, gameId, progression) => {
   const sessionRef = doc(db, 'sessions', sessionId);
   await setDoc(sessionRef, {
