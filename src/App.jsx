@@ -16,6 +16,8 @@ import {
   setGamePassword,
   clearGamePassword,
   checkUsernameUnique,
+  getUsernameSession,
+  setUserPassword,
   rateGame,
   subscribeToGameStats,
   db
@@ -43,6 +45,10 @@ export default function App() {
   const [nameError, setNameError] = useState('');
   const [gameSearchQuery, setGameSearchQuery] = useState('');
   const [gameStats, setGameStats] = useState({});
+  const [showPasswordLogin, setShowPasswordLogin] = useState(false);
+  const [loginPasswordInput, setLoginPasswordInput] = useState('');
+  const [pendingSession, setPendingSession] = useState(null);
+  const [isFirstLogin, setIsFirstLogin] = useState(false);
   const iframeContainerRef = useRef(null);
 
   useEffect(() => {
@@ -176,15 +182,59 @@ export default function App() {
   const handleNameSubmit = async (e) => {
     e.preventDefault();
     setNameError('');
-    if (nameInput.trim().length >= 2) {
-      const isUnique = await checkUsernameUnique(nameInput.trim(), sessionId);
-      if (isUnique || sessionId === '4CDVMIEU6' || sessionId === 'ZBA7JG2RX') {
-        setUsername(nameInput.trim());
-        updateSession(sessionId, nameInput.trim());
+    const inputName = nameInput.trim();
+    if (inputName.length >= 2) {
+      const existingSession = await getUsernameSession(inputName);
+      
+      // CASE 1: Username is available
+      if (!existingSession) {
+        setUsername(inputName);
+        await updateUsername(sessionId, inputName);
+        setIsFirstLogin(true); // Flag to redirect to settings
+        setActiveTab('profile'); // Force profile tab
         setShowNameEntry(false);
-      } else {
-        setNameError('Selection Rejected: Identity already active in network.');
+        return;
       }
+
+      // CASE 2: It's the current user's session
+      if (existingSession.id === sessionId) {
+        setUsername(inputName);
+        setShowNameEntry(false);
+        return;
+      }
+
+      // CASE 3: Username taken, check for password
+      if (existingSession.password) {
+        setPendingSession(existingSession);
+        setShowPasswordLogin(true);
+      } else {
+        // Legacy or unprotected session
+        if (sessionId === '4CDVMIEU6' || sessionId === 'ZBA7JG2RX') {
+          setUsername(inputName);
+          updateUsername(sessionId, inputName);
+          setShowNameEntry(false);
+        } else {
+          setNameError('Selection Rejected: Identity already active in network.');
+        }
+      }
+    }
+  };
+
+  const handlePasswordLogin = async (e) => {
+    e.preventDefault();
+    if (loginPasswordInput === pendingSession.password) {
+      // Identity Verified. 
+      // NOTE: In a real system we'd merge sessions or transfer the ID.
+      // For this sandbox, we'll just allow them to use the username if they know the password.
+      setUsername(pendingSession.username);
+      
+      // Update current session to match
+      await updateUsername(sessionId, pendingSession.username);
+      setShowNameEntry(false);
+      setShowPasswordLogin(false);
+      setPendingSession(null);
+    } else {
+      setNameError('Invalid Access Key for this identity.');
     }
   };
 
@@ -204,6 +254,16 @@ export default function App() {
             </p>
           </div>
         </div>
+        {isFirstLogin && (
+          <div className="bg-indigo-900/30 border border-indigo-500/50 p-4 animate-pulse flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <ShieldCheck className="text-indigo-400" size={20} />
+              <span className="text-[10px] font-mono text-indigo-300 uppercase tracking-widest font-bold">
+                Identity Initialization Required: Please set an Account Security Key below.
+              </span>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -246,6 +306,40 @@ export default function App() {
             <code className="text-xs text-slate-400 font-mono bg-slate-950 p-2 block border border-slate-800/50">
               {sessionId}
             </code>
+          </div>
+
+          <div className="pt-6 border-t border-slate-800/50">
+            <label className="block text-[10px] font-mono text-indigo-400 uppercase tracking-widest mb-2 font-bold">Account Security Key</label>
+            <div className="flex gap-2">
+              <input 
+                type="password"
+                placeholder={userProfile?.password ? "••••••••" : "Set Account Password..."}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && e.target.value) {
+                    setUserPassword(sessionId, e.target.value);
+                    e.target.value = '';
+                    setIsFirstLogin(false);
+                  }
+                }}
+                className="flex-1 bg-slate-950 border border-slate-800 p-3 text-slate-200 font-mono text-sm focus:border-indigo-500 outline-none transition-all"
+              />
+              <button 
+                onClick={(e) => {
+                  const input = e.currentTarget.previousSibling;
+                  if (input.value) {
+                    setUserPassword(sessionId, input.value);
+                    input.value = '';
+                    setIsFirstLogin(false);
+                  }
+                }}
+                className="px-4 bg-indigo-600 text-[10px] text-white font-bold uppercase hover:bg-indigo-500 transition-all font-mono"
+              >
+                UPDATE
+              </button>
+            </div>
+            <p className="text-[9px] text-slate-500 mt-2 font-mono uppercase tracking-widest leading-relaxed">
+              This password will be required when logging in with this username from a new device.
+            </p>
           </div>
         </div>
 
@@ -609,38 +703,78 @@ export default function App() {
             </div>
           </div>
 
-          <form onSubmit={handleNameSubmit} className="relative z-10">
-            <div className="mb-8">
-              <label className="block text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-3">Operator Codename</label>
-              <input
-                type="text"
-                autoFocus
-                required
-                value={nameInput}
-                onChange={(e) => setNameInput(e.target.value)}
-                className={`w-full bg-slate-950 border ${nameError ? 'border-red-500' : 'border-slate-800'} p-4 text-slate-200 font-mono text-sm focus:border-indigo-500 outline-none transition-all placeholder:text-slate-800`}
-                placeholder="Enter Username..."
-                maxLength={20}
-              />
-              {nameError && (
-                <p className="text-[10px] text-red-500 mt-3 font-mono uppercase tracking-widest bg-red-950/20 p-2 border-l-2 border-red-500 animate-pulse">
-                  {nameError}
+          {!showPasswordLogin ? (
+            <form onSubmit={handleNameSubmit} className="relative z-10">
+              <div className="mb-8">
+                <label className="block text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-3">Operator Codename</label>
+                <input
+                  type="text"
+                  autoFocus
+                  required
+                  value={nameInput}
+                  onChange={(e) => setNameInput(e.target.value)}
+                  className={`w-full bg-slate-950 border ${nameError ? 'border-red-500' : 'border-slate-800'} p-4 text-slate-200 font-mono text-sm focus:border-indigo-500 outline-none transition-all placeholder:text-slate-800`}
+                  placeholder="Enter Username..."
+                  maxLength={20}
+                />
+                {nameError && (
+                  <p className="text-[10px] text-red-500 mt-3 font-mono uppercase tracking-widest bg-red-950/20 p-2 border-l-2 border-red-500 animate-pulse">
+                    {nameError}
+                  </p>
+                )}
+                <p className="text-[8px] text-slate-600 mt-3 font-mono uppercase tracking-widest italic">
+                  * This identifier will be linked to your session token
                 </p>
-              )}
-              <p className="text-[8px] text-slate-600 mt-3 font-mono uppercase tracking-widest italic">
-                * This identifier will be linked to your session token
-              </p>
-            </div>
+              </div>
 
-            <button
-              type="submit"
-              className="w-full py-4 bg-indigo-600 text-[10px] text-white font-bold uppercase tracking-[0.3em] hover:bg-indigo-500 transition-all shadow-[0_0_20px_rgba(79,70,229,0.3)] flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed group"
-              disabled={nameInput.trim().length < 2}
-            >
-              Initialize Session
-              <Play size={14} className="group-hover:translate-x-1 transition-transform" />
-            </button>
-          </form>
+              <button
+                type="submit"
+                className="w-full py-4 bg-indigo-600 text-[10px] text-white font-bold uppercase tracking-[0.3em] hover:bg-indigo-500 transition-all shadow-[0_0_20px_rgba(79,70,229,0.3)] flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed group"
+                disabled={nameInput.trim().length < 2}
+              >
+                Initialize Session
+                <Play size={14} className="group-hover:translate-x-1 transition-transform" />
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handlePasswordLogin} className="relative z-10">
+              <div className="mb-8">
+                <div className="flex justify-between items-center mb-3">
+                  <label className="block text-[10px] font-mono text-slate-500 uppercase tracking-widest">Identity Authentication</label>
+                  <button 
+                    type="button"
+                    onClick={() => setShowPasswordLogin(false)}
+                    className="text-[9px] font-mono text-indigo-400 uppercase underline bg-transparent border-none p-0"
+                  >
+                    Change Name
+                  </button>
+                </div>
+                <p className="text-xs text-white font-bold mb-4 font-mono uppercase tracking-tight">Login for: <span className="text-indigo-400">{pendingSession.username}</span></p>
+                <input
+                  type="password"
+                  autoFocus
+                  required
+                  value={loginPasswordInput}
+                  onChange={(e) => setLoginPasswordInput(e.target.value)}
+                  className={`w-full bg-slate-950 border ${nameError ? 'border-red-500' : 'border-slate-800'} p-4 text-slate-200 font-mono text-sm focus:border-indigo-500 outline-none transition-all placeholder:text-slate-800`}
+                  placeholder="Enter Security Key..."
+                />
+                {nameError && (
+                  <p className="text-[10px] text-red-500 mt-3 font-mono uppercase tracking-widest bg-red-950/20 p-2 border-l-2 border-red-500 animate-pulse">
+                    {nameError}
+                  </p>
+                )}
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-4 bg-indigo-600 text-[10px] text-white font-bold uppercase tracking-[0.3em] hover:bg-indigo-500 transition-all shadow-[0_0_20px_rgba(79,70,229,0.3)] flex items-center justify-center gap-3 flex items-center justify-center gap-3"
+              >
+                De-Encrypt & Join
+                <Play size={14} />
+              </button>
+            </form>
+          )}
           
           <div className="mt-10 pt-6 border-t border-slate-800/50 flex justify-between items-center opacity-40">
              <div className="flex gap-1">
@@ -790,7 +924,7 @@ export default function App() {
           {!activeItem ? (
             activeTab === 'games' ? (
             <div className="flex-1 p-6 md:p-10 w-full max-w-6xl mx-auto overflow-y-auto bg-slate-950/20">
-                <div className="mb-10 border-b border-slate-800 pb-6 flex items-end justify-between">
+                <div className="mb-10 border-b border-slate-800 pb-6 flex flex-col md:flex-row md:items-end justify-between gap-6">
                   <div className="flex items-center gap-4">
                      <div className="w-12 h-12 rounded-none flex overflow-hidden border border-slate-900 shadow-[0_0_15px_rgba(79,70,229,0.4)]">
                        <div className="w-1/2 h-full bg-white"></div>
@@ -814,18 +948,20 @@ export default function App() {
                       </div>
                     </div>
                   </div>
-                  <div className="hidden md:flex items-center gap-4">
-                    <div className="relative">
+                  <div className="flex items-center gap-4 w-full md:w-auto">
+                    <div className="relative w-full md:w-64">
                       <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
                       <input 
                         type="text"
                         placeholder="SEARCH GAMES..."
                         value={gameSearchQuery}
                         onChange={(e) => setGameSearchQuery(e.target.value)}
-                        className="bg-slate-900 border border-slate-800 py-2 pl-10 pr-4 text-[10px] font-mono text-slate-200 focus:border-indigo-500 outline-none transition-all w-64 uppercase tracking-tighter"
+                        className="bg-slate-900 border border-slate-800 py-2 pl-10 pr-4 text-[10px] font-mono text-slate-200 focus:border-indigo-500 outline-none transition-all w-full uppercase tracking-tighter"
                       />
                     </div>
-                    <Gamepad2 size={32} className="text-slate-700" />
+                    <div className="hidden md:block">
+                      <Gamepad2 size={32} className="text-slate-700" />
+                    </div>
                   </div>
                 </div>
 

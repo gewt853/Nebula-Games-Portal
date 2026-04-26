@@ -32,6 +32,10 @@
         "ratings": {
           "type": "object",
           "description": "User ratings for games, keyed by game ID."
+        },
+        "password": {
+          "type": "string",
+          "description": "Password set by the user to protect their session."
         }
       },
       "required": ["lastActive", "isOnline"]

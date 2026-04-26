@@ -8,41 +8,45 @@ service cloud.firestore {
 
     // Helper functions
     function isValidId(id) { 
-      return id is string && id.size() <= 64 && id.matches('^[a-zA-Z0-9_\\-]+$'); 
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); 
     }
     function incoming() { return request.resource.data; }
     function existing() { return resource.data; }
 
+    function isValidSession(data) {
+      return data.keys().hasAll(['isOnline', 'lastActive'])
+        && (data.lastActive == request.time || data.lastActive is string)
+        && data.isOnline is bool;
+    }
+
+    function isValidGameStats(data) {
+      return data.keys().hasAll(['ratingSum', 'ratingCount'])
+        && data.ratingSum is number
+        && data.ratingCount is number;
+    }
+
     // Stats collection (Visit Count)
     match /stats/{statsId} {
       allow read: if isValidId(statsId);
-      allow create, update: if isValidId(statsId) 
-        && incoming().keys().hasAll(['visitCount'])
-        && incoming().visitCount is number;
+      allow write: if isValidId(statsId) && incoming().visitCount is number;
     }
 
     // Game Stats collection (Ratings)
     match /game_stats/{gameId} {
-      allow read: if isValidId(gameId);
-      allow list: if true;
-      // Only allow updates that modify ratingSum/ratingCount
-      allow write: if isValidId(gameId)
-        && incoming().ratingSum is number
-        && incoming().ratingCount is number;
+      allow read, list: if isValidId(gameId);
+      allow write: if isValidId(gameId) && isValidGameStats(incoming());
     }
 
     // Sessions collection
     match /sessions/{sessionId} {
-      allow read: if isValidId(sessionId);
-      allow list: if true; // Needed for admin dashboard
-      allow write: if isValidId(sessionId)
-        && (incoming().lastActive == request.time || incoming().lastActive is string); // lastActive is serverTimestamp or ISO
+      allow read, list: if isValidId(sessionId);
+      allow create: if isValidId(sessionId) && isValidSession(incoming());
+      allow update: if isValidId(sessionId) && (isValidSession(incoming()) || incoming().keys().hasAny(['ratings', 'username', 'gameLocks', 'progressions']));
     }
 
     // Bans collection
     match /bans/{banId} {
-      allow read: if isValidId(banId);
-      allow list: if true; // Needed for admin dashboard
+      allow read, list: if isValidId(banId);
       allow write: if isValidId(banId);
     }
   }

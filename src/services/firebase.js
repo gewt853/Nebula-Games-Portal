@@ -21,6 +21,30 @@ import firebaseConfig from '../../firebase-applet-config.json';
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 
+// Error Handling helper
+export const OperationType = {
+  CREATE: 'create',
+  UPDATE: 'update',
+  DELETE: 'delete',
+  LIST: 'list',
+  GET: 'get',
+  WRITE: 'write',
+};
+
+function handleFirestoreError(error, operationType, path) {
+  const errInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: null, // We aren't using Firebase Auth currently, just session IDs
+      isAnonymous: true,
+    },
+    operationType,
+    path
+  };
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
+}
+
 export const incrementVisitCount = async () => {
   const statsRef = doc(db, 'stats', 'global');
   try {
@@ -46,7 +70,7 @@ export const subscribeToVisitCount = (callback) => {
       callback(0);
     }
   }, (error) => {
-    console.error('Error listening to visit count:', error);
+    handleFirestoreError(error, OperationType.GET, 'stats/global');
   });
 };
 
@@ -79,6 +103,8 @@ export const subscribeToSessions = (callback) => {
   return onSnapshot(q, (snapshot) => {
     const sessions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     callback(sessions);
+  }, (error) => {
+    handleFirestoreError(error, OperationType.LIST, 'sessions');
   });
 };
 
@@ -96,10 +122,23 @@ export const checkUsernameUnique = async (username, currentSessionId) => {
   return otherUsers.length === 0;
 };
 
+export const getUsernameSession = async (username) => {
+  const q = query(collection(db, 'sessions'), where('username', '==', username));
+  const querySnapshot = await getDocs(q);
+  if (querySnapshot.empty) return null;
+  const doc = querySnapshot.docs[0];
+  return { id: doc.id, ...doc.data() };
+};
+
 // Profile & Progressions
 export const updateUsername = async (sessionId, username) => {
   const sessionRef = doc(db, 'sessions', sessionId);
   await updateDoc(sessionRef, { username });
+};
+
+export const setUserPassword = async (sessionId, password) => {
+  const sessionRef = doc(db, 'sessions', sessionId);
+  await updateDoc(sessionRef, { password });
 };
 
 export const saveGameProgress = async (sessionId, gameId, progression) => {
@@ -154,6 +193,8 @@ export const subscribeToBans = (callback) => {
   return onSnapshot(q, (snapshot) => {
     const bans = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     callback(bans);
+  }, (error) => {
+    handleFirestoreError(error, OperationType.LIST, 'bans');
   });
 };
 
@@ -207,5 +248,7 @@ export const subscribeToGameStats = (callback) => {
       stats[doc.id] = doc.data();
     });
     callback(stats);
+  }, (error) => {
+    handleFirestoreError(error, OperationType.LIST, 'game_stats');
   });
 };
