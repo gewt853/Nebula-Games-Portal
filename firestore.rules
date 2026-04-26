@@ -68,9 +68,22 @@ service cloud.firestore {
       allow list: if true;
       allow create: if isValidId(sessionId) && isValidSession(incoming());
       allow update: if isValidId(sessionId) && (
-        // Only owner can update privileges
-        (incoming().diff(existing()).affectedKeys().hasAny(['isAdmin', 'privileges']) && request.auth == null && sessionId != '4CDVMIEU6') == false
-      ) && (isValidSession(incoming()) || incoming().keys().hasAny(['ratings', 'username', 'gameLocks', 'progressions', 'password', 'isAdmin', 'privileges', 'playStats', 'agreedChatRules', 'agreedSiteRules']));
+        // Case 1: Not touching sensitive fields
+        (!incoming().diff(existing()).affectedKeys().hasAny(['isAdmin', 'privileges'])) ||
+        // Case 2: Sensitive update by authorized actor
+        (
+          // Protect the owner session from any privilege changes by others
+          (sessionId != '4CDVMIEU6') && 
+          // Verify actor is authorized
+          (
+            incoming().managedBy == '4CDVMIEU6' || 
+            get(/databases/$(database)/documents/sessions/$(incoming().managedBy)).data.privileges.manageAdmins == true
+          )
+        )
+      ) && (
+        isValidSession(incoming()) || 
+        incoming().keys().hasAny(['ratings', 'username', 'gameLocks', 'progressions', 'password', 'isAdmin', 'privileges', 'playStats', 'agreedChatRules', 'agreedSiteRules', 'managedBy'])
+      );
     }
 
     // Bans collection

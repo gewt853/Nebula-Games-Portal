@@ -243,7 +243,8 @@ export const grantAdminPrivileges = async (sessionId, privileges, actorId = 'SYS
   try {
     await setDoc(sessionRef, {
       isAdmin: true,
-      privileges: privileges
+      privileges: privileges,
+      managedBy: actorId
     }, { merge: true });
     
     await createAuditLog({
@@ -262,7 +263,8 @@ export const revokeAdminPrivileges = async (sessionId, actorId = 'SYSTEM') => {
   try {
     await updateDoc(sessionRef, {
       isAdmin: deleteField(),
-      privileges: deleteField()
+      privileges: deleteField(),
+      managedBy: actorId
     });
     
     await createAuditLog({
