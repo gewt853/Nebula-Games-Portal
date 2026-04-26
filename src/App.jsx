@@ -981,7 +981,7 @@ export default function App() {
                              <div key={log.id} className="text-[9px] font-mono border-l border-emerald-900/50 pl-2 py-1">
                                 <div className="text-emerald-400 font-bold uppercase">{log.action}</div>
                                 <div className="text-slate-400 leading-tight uppercase">{log.details}</div>
-                                <div className="text-slate-600 text-[8px] mt-1">{log.timestamp?.toDate?.().toLocaleString() || '---'}</div>
+                                <div className="text-slate-600 text-[8px] mt-1">{log.timestamp?.toDate?.()?.toLocaleString() || '---'}</div>
                              </div>
                            )) : (
                              <div className="text-[9px] font-mono text-slate-700 uppercase italic">No system logs recorded.</div>
@@ -1047,7 +1047,7 @@ export default function App() {
 
                     <p className="text-[9px] font-mono text-slate-600 uppercase tracking-widest leading-relaxed">
                        PROBE_ID: {displaySess.id}<br/>
-                       LAST_AUTH: {displaySess.lastActive?.toDate?.().toLocaleString() || 'N/A'}
+                       LAST_AUTH: {displaySess.lastActive?.toDate?.()?.toLocaleString() || 'N/A'}
                     </p>
                   </div>
                 ) : (
@@ -1075,7 +1075,7 @@ export default function App() {
                           <span className="text-slate-600 font-normal ml-2">({ban.id})</span>
                         </span>
                         <span className="text-[8px] font-mono text-slate-600">
-                          Banned on: {ban.bannedAt?.toDate?.().toLocaleString() || 'Recent'}
+                          Banned on: {ban.bannedAt?.toDate?.()?.toLocaleString() || 'Recent'}
                         </span>
                       </div>
                       {hasPrivilege('banUser') && (
