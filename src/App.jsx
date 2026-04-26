@@ -257,9 +257,10 @@ export default function App() {
         if (!existingSession) {
           await updateUsername(sessionId, inputName);
           setUsername(inputName);
-          setIsFirstLogin(true); // Flag to redirect to settings
-          setActiveTab('profile'); // Force profile tab
-          setShowNameEntry(false);
+          
+          // FOR NEW USERS: Prompt for password setup immediately
+          setPendingSession({ id: sessionId, username: inputName, isNew: true });
+          setShowPasswordLogin(true);
           return;
         }
 
@@ -299,6 +300,18 @@ export default function App() {
     setIsSubmittingName(true);
     setNameError('');
     try {
+      // NEW USER PASSWORD SETUP
+      if (pendingSession.isNew) {
+        await setUserPassword(sessionId, loginPasswordInput);
+        sessionStorage.setItem('nebula_auth_confirmed', 'true');
+        setUsername(pendingSession.username);
+        setShowNameEntry(false);
+        setShowPasswordLogin(false);
+        setPendingSession(null);
+        setLoginPasswordInput('');
+        return;
+      }
+
       if (loginPasswordInput === pendingSession.password) {
         // Identity Verified. 
         sessionStorage.setItem('nebula_auth_confirmed', 'true');
@@ -1018,8 +1031,12 @@ export default function App() {
               <User size={20} className="text-indigo-500" />
             </div>
             <div>
-              <h1 className="text-2xl font-black uppercase tracking-tighter text-white leading-none">Identity Check</h1>
-              <p className="text-[9px] font-mono text-indigo-400 uppercase tracking-[0.2em] mt-1">Personnel Registration</p>
+              <h1 className="text-2xl font-black uppercase tracking-tighter text-white leading-none">
+                {userProfile?.username ? `Welcome Back to Nebula Network ${userProfile.username}` : 'Welcome to Nebula Network'}
+              </h1>
+              <p className="text-[9px] font-mono text-indigo-400 uppercase tracking-[0.2em] mt-1">
+                {userProfile?.username ? 'Personnel Verification' : 'New Node Initialization'}
+              </p>
             </div>
           </div>
 
@@ -1042,8 +1059,8 @@ export default function App() {
                     {nameError}
                   </p>
                 )}
-                <p className="text-[8px] text-slate-600 mt-3 font-mono uppercase tracking-widest italic">
-                  * This identifier will be linked to your session token
+                <p className="text-[8px] text-slate-600 mt-3 font-mono uppercase tracking-widest italic leading-relaxed">
+                  * This identifier will be linked to your session token. {!userProfile?.username && "You will be prompted to set a security key next."}
                 </p>
               </div>
 
@@ -1069,7 +1086,9 @@ export default function App() {
                     Change Name
                   </button>
                 </div>
-                <p className="text-xs text-white font-bold mb-4 font-mono uppercase tracking-tight">Login for: <span className="text-indigo-400">{pendingSession.username}</span></p>
+                <p className="text-xs text-white font-bold mb-4 font-mono uppercase tracking-tight">
+                  {pendingSession.isNew ? 'Create Security Key for' : 'Verify Identity for'}: <span className="text-indigo-400">{pendingSession.username}</span>
+                </p>
                 <input
                   type="password"
                   autoFocus
@@ -1077,11 +1096,16 @@ export default function App() {
                   value={loginPasswordInput}
                   onChange={(e) => setLoginPasswordInput(e.target.value)}
                   className={`w-full bg-slate-950 border ${nameError ? 'border-red-500' : 'border-slate-800'} p-4 text-slate-200 font-mono text-sm focus:border-indigo-500 outline-none transition-all placeholder:text-slate-800`}
-                  placeholder="Enter Security Key..."
+                  placeholder={pendingSession.isNew ? "Create Account Password..." : "Enter Security Key..."}
                 />
                 {nameError && (
                   <p className="text-[10px] text-red-500 mt-3 font-mono uppercase tracking-widest bg-red-950/20 p-2 border-l-2 border-red-500 animate-pulse">
                     {nameError}
+                  </p>
+                )}
+                {pendingSession.isNew && (
+                  <p className="text-[8px] text-slate-600 mt-3 font-mono uppercase tracking-widest italic leading-relaxed">
+                    * This password will be required if you access from a different device.
                   </p>
                 )}
               </div>
@@ -1091,7 +1115,7 @@ export default function App() {
                 disabled={isSubmittingName || loginPasswordInput.length === 0}
                 className="w-full py-4 bg-indigo-600 text-[10px] text-white font-bold uppercase tracking-[0.3em] hover:bg-indigo-500 transition-all shadow-[0_0_20px_rgba(79,70,229,0.3)] flex items-center justify-center gap-3 disabled:opacity-50"
               >
-                {isSubmittingName ? 'VERIFYING...' : 'De-Encrypt & Join'}
+                {isSubmittingName ? 'VERIFYING...' : (pendingSession.isNew ? 'Initialize Security' : 'De-Encrypt & Join')}
                 {!isSubmittingName && <ShieldCheck size={14} />}
               </button>
             </form>
