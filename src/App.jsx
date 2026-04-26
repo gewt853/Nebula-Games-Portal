@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, ArrowLeft, Gamepad2, Info, ShieldCheck, Globe, List, ExternalLink, Maximize, TrendingUp, Lock, Settings, User, Save, Key, Edit2, Search, Star, MessageSquarePlus, MessageSquare, Send } from 'lucide-react';
+import { Play, ArrowLeft, Gamepad2, Info, ShieldCheck, Globe, List, ExternalLink, Maximize, TrendingUp, Lock, Settings, User, Save, Key, Edit2, Search, Star, MessageSquarePlus, MessageSquare, Send, Crown, Shield } from 'lucide-react';
 import gamesData from './data/games.json';
 import proxiesData from './data/proxies.json';
 import { 
@@ -501,11 +501,29 @@ export default function App() {
               return (
                 <div key={msg.id || idx} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
                   <div className="flex items-center gap-3 mb-1">
-                    {!isMe && <span className="text-[9px] font-mono font-black text-indigo-400 uppercase">{msg.senderName}</span>}
+                    {!isMe && (
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[9px] font-mono font-black text-indigo-400 uppercase">{msg.senderName}</span>
+                        {msg.senderId === OWNER_ID ? (
+                          <Crown size={10} className="text-amber-400 fill-amber-400/20" />
+                        ) : msg.isAdmin ? (
+                          <Shield size={10} className="text-indigo-400 fill-indigo-400/20" />
+                        ) : null}
+                      </div>
+                    )}
                     <span className="text-[8px] font-mono text-slate-600 uppercase">
                       {msg.timestamp?.toDate?.()?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) || '---'}
                     </span>
-                    {isMe && <span className="text-[9px] font-mono font-black text-emerald-400 uppercase">Local Node</span>}
+                    {isMe && (
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[9px] font-mono font-black text-emerald-400 uppercase">{username} (YOU)</span>
+                        {sessionId === OWNER_ID ? (
+                          <Crown size={10} className="text-amber-400 fill-amber-400/20" />
+                        ) : isAdminAuthenticated ? (
+                          <Shield size={10} className="text-indigo-400 fill-indigo-400/20" />
+                        ) : null}
+                      </div>
+                    )}
                   </div>
                   <div className={`max-w-[80%] md:max-w-[60%] p-3 text-xs font-mono uppercase tracking-tight leading-relaxed shadow-lg ${
                     isMe 
@@ -527,7 +545,7 @@ export default function App() {
             onSubmit={(e) => {
               e.preventDefault();
               if (newMessage.trim()) {
-                sendMessage(sessionId, username, newMessage.trim());
+                sendMessage(sessionId, username, newMessage.trim(), false, isAdminAuthenticated || sessionId === OWNER_ID);
                 setNewMessage('');
               }
             }}
@@ -549,7 +567,12 @@ export default function App() {
             </button>
           </form>
           <div className="mt-3 flex justify-between">
-             <span className="text-[8px] font-mono text-slate-600 uppercase tracking-widest">Protocol: UDP Encrypted Branch</span>
+             <div className="flex items-center gap-4">
+               <span className="text-[8px] font-mono text-slate-600 uppercase tracking-widest">Protocol: UDP Encrypted Branch</span>
+               <div className="flex items-center gap-1 text-[8px] font-mono text-cyan-600/60 uppercase tracking-widest">
+                 <ShieldCheck size={8} /> Cloudflare WAF: Active | DDoS Protection: Enabled
+               </div>
+             </div>
              <span className="text-[8px] font-mono text-slate-600 uppercase tracking-widest">Characters: {newMessage.length}/1000</span>
           </div>
         </div>

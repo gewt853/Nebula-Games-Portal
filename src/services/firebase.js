@@ -360,7 +360,7 @@ export const subscribeToGameStats = (callback) => {
 };
 
 // Chat Management
-export const sendMessage = async (sessionId, username, text, isSystem = false) => {
+export const sendMessage = async (sessionId, username, text, isSystem = false, isAdmin = false) => {
   // Automated Moderation Check
   const prohibitedPatterns = [
     /test_ban_trigger/i, // For testing the automated ban
@@ -386,7 +386,8 @@ export const sendMessage = async (sessionId, username, text, isSystem = false) =
       senderId: sessionId,
       senderName: username,
       timestamp: serverTimestamp(),
-      system: isSystem
+      system: isSystem,
+      isAdmin: isAdmin
     });
   } catch (error) {
     handleFirestoreError(error, OperationType.CREATE, `messages/${messageId}`);
