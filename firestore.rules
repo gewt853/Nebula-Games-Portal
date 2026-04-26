@@ -33,20 +33,23 @@ service cloud.firestore {
 
     // Game Stats collection (Ratings)
     match /game_stats/{gameId} {
-      allow read, list: if isValidId(gameId);
+      allow read: if isValidId(gameId);
+      allow list: if true;
       allow write: if isValidId(gameId) && isValidGameStats(incoming());
     }
 
     // Sessions collection
     match /sessions/{sessionId} {
-      allow read, list: if isValidId(sessionId);
+      allow read: if isValidId(sessionId);
+      allow list: if true;
       allow create: if isValidId(sessionId) && isValidSession(incoming());
-      allow update: if isValidId(sessionId) && (isValidSession(incoming()) || incoming().keys().hasAny(['ratings', 'username', 'gameLocks', 'progressions']));
+      allow update: if isValidId(sessionId) && (isValidSession(incoming()) || incoming().keys().hasAny(['ratings', 'username', 'gameLocks', 'progressions', 'password']));
     }
 
     // Bans collection
     match /bans/{banId} {
-      allow read, list: if isValidId(banId);
+      allow read: if isValidId(banId);
+      allow list: if true;
       allow write: if isValidId(banId);
     }
   }
