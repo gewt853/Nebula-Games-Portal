@@ -40,6 +40,19 @@
         "playStats": {
           "type": "object",
           "description": "Tracking game engagement, keyed by game ID with duration and lastPlayed fields."
+        },
+        "isAdmin": {
+          "type": "boolean",
+          "description": "Whether this user has admin status."
+        },
+        "privileges": {
+          "type": "object",
+          "properties": {
+            "banUser": { "type": "boolean" },
+            "viewUser": { "type": "boolean" },
+            "fullAccess": { "type": "boolean" }
+          },
+          "description": "Granular administrative privileges."
         }
       },
       "required": ["lastActive", "isOnline"]

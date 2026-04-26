@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, ArrowLeft, Gamepad2, Info, ShieldCheck, Globe, List, ExternalLink, Maximize, TrendingUp, Lock, Settings, User, Save, Key, Edit2, Search, Star } from 'lucide-react';
+import { Play, ArrowLeft, Gamepad2, Info, ShieldCheck, Globe, List, ExternalLink, Maximize, TrendingUp, Lock, Settings, User, Save, Key, Edit2, Search, Star, MessageSquarePlus } from 'lucide-react';
 import gamesData from './data/games.json';
 import proxiesData from './data/proxies.json';
 import { 
@@ -11,6 +11,8 @@ import {
   subscribeToBans, 
   banUser, 
   unbanUser, 
+  grantAdminPrivileges,
+  revokeAdminPrivileges,
   getSession,
   updateUsername,
   setGamePassword,
@@ -30,6 +32,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('games');
   const [visitCount, setVisitCount] = useState(0);
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+  const [adminPrivileges, setAdminPrivileges] = useState({ banUser: false, viewUser: false, fullAccess: false });
   const [adminPasswordInput, setAdminPasswordInput] = useState('');
   const [authError, setAuthError] = useState(false);
   const [isBanned, setIsBanned] = useState(false);
@@ -51,6 +54,7 @@ export default function App() {
   const [pendingSession, setPendingSession] = useState(null);
   const [isFirstLogin, setIsFirstLogin] = useState(false);
   const [selectedUserSess, setSelectedUserSess] = useState(null);
+  const [isSubmittingName, setIsSubmittingName] = useState(false);
   const iframeContainerRef = useRef(null);
   const playStartTimeRef = useRef(null);
   const OWNER_ID = '4CDVMIEU6';
@@ -64,15 +68,10 @@ export default function App() {
     }
     setSessionId(currentSessionId);
 
-    // Auto-auth owner
-    if (currentSessionId === OWNER_ID) {
-      setIsAdminAuthenticated(true);
-    }
-
     // Initial checks
     const init = async () => {
       const banned = await checkBanStatus(currentSessionId);
-      if (banned && currentSessionId !== '4CDVMIEU6') {
+      if (banned && currentSessionId !== OWNER_ID) {
         setIsBanned(true);
         return;
       }
@@ -83,8 +82,27 @@ export default function App() {
       updateSession(currentSessionId, sessionData?.username || null);
 
       if (sessionData && sessionData.username) {
-        setUsername(sessionData.username);
-        setShowNameEntry(false);
+        // CHECK FOR PASSWORD LOCK
+        const isAuthConfirmed = sessionStorage.getItem('nebula_auth_confirmed') === 'true';
+        if (sessionData.password && !isAuthConfirmed) {
+          setUsername(sessionData.username);
+          setPendingSession({ id: currentSessionId, ...sessionData });
+          setShowPasswordLogin(true);
+          setShowNameEntry(true); // Force overlay to show
+        } else {
+          setUsername(sessionData.username);
+          setShowNameEntry(false);
+          // Auto-auth owner OR anyone with isAdmin status
+          if (currentSessionId === OWNER_ID || sessionData.isAdmin) {
+            setIsAdminAuthenticated(true);
+            if (sessionData.privileges) {
+              setAdminPrivileges(sessionData.privileges);
+            } else if (currentSessionId === OWNER_ID) {
+              // Owner always has full access
+              setAdminPrivileges({ banUser: true, viewUser: true, fullAccess: true });
+            }
+          }
+        }
       } else {
         setShowNameEntry(true);
       }
@@ -114,6 +132,23 @@ export default function App() {
       if (docSnapshot.exists()) {
         const data = docSnapshot.data();
         setUserProfile(data);
+
+        // Sync Admin State
+        if (data.isAdmin || currentSessionId === OWNER_ID) {
+          setIsAdminAuthenticated(true);
+          if (data.privileges) {
+            setAdminPrivileges(data.privileges);
+          } else if (currentSessionId === OWNER_ID) {
+            setAdminPrivileges({ banUser: true, viewUser: true, fullAccess: true });
+          }
+        } else {
+          // If they were admin and lost it, remove it
+          if (!data.isAdmin && currentSessionId !== OWNER_ID) {
+            setIsAdminAuthenticated(false);
+            setAdminPrivileges({ banUser: false, viewUser: false, fullAccess: false });
+          }
+        }
+
         if (data.username) {
           setUsername(data.username);
           // Auto-check if current username is still valid/unique (unless exception ID)
@@ -209,60 +244,88 @@ export default function App() {
 
   const handleNameSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmittingName) return;
+    setIsSubmittingName(true);
     setNameError('');
-    const inputName = nameInput.trim();
-    if (inputName.length >= 2) {
-      const existingSession = await getUsernameSession(inputName);
-      
-      // CASE 1: Username is available
-      if (!existingSession) {
-        setUsername(inputName);
-        await updateUsername(sessionId, inputName);
-        setIsFirstLogin(true); // Flag to redirect to settings
-        setActiveTab('profile'); // Force profile tab
-        setShowNameEntry(false);
-        return;
-      }
-
-      // CASE 2: It's the current user's session
-      if (existingSession.id === sessionId) {
-        setUsername(inputName);
-        setShowNameEntry(false);
-        return;
-      }
-
-      // CASE 3: Username taken, check for password
-      if (existingSession.password) {
-        setPendingSession(existingSession);
-        setShowPasswordLogin(true);
-      } else {
-        // Legacy or unprotected session
-        if (sessionId === '4CDVMIEU6' || sessionId === 'ZBA7JG2RX') {
+    
+    try {
+      const inputName = nameInput.trim();
+      if (inputName.length >= 2) {
+        const existingSession = await getUsernameSession(inputName);
+        
+        // CASE 1: Username is available
+        if (!existingSession) {
+          await updateUsername(sessionId, inputName);
           setUsername(inputName);
-          updateUsername(sessionId, inputName);
+          setIsFirstLogin(true); // Flag to redirect to settings
+          setActiveTab('profile'); // Force profile tab
           setShowNameEntry(false);
+          return;
+        }
+
+        // CASE 2: It's the current user's session
+        if (existingSession.id === sessionId) {
+          setUsername(inputName);
+          setShowNameEntry(false);
+          return;
+        }
+
+        // CASE 3: Username taken, check for password
+        if (existingSession.password) {
+          setPendingSession(existingSession);
+          setShowPasswordLogin(true);
         } else {
-          setNameError('Selection Rejected: Identity already active in network.');
+          // Legacy or unprotected session
+          if (sessionId === OWNER_ID || sessionId === 'ZBA7JG2RX') {
+            await updateUsername(sessionId, inputName);
+            setUsername(inputName);
+            setShowNameEntry(false);
+          } else {
+            setNameError('Selection Rejected: Identity already active in network.');
+          }
         }
       }
+    } catch (err) {
+      console.error(err);
+      setNameError('Initialization failure. Check matrix connection.');
+    } finally {
+      setIsSubmittingName(false);
     }
   };
 
   const handlePasswordLogin = async (e) => {
     e.preventDefault();
-    if (loginPasswordInput === pendingSession.password) {
-      // Identity Verified. 
-      // NOTE: In a real system we'd merge sessions or transfer the ID.
-      // For this sandbox, we'll just allow them to use the username if they know the password.
-      setUsername(pendingSession.username);
-      
-      // Update current session to match
-      await updateUsername(sessionId, pendingSession.username);
-      setShowNameEntry(false);
-      setShowPasswordLogin(false);
-      setPendingSession(null);
-    } else {
-      setNameError('Invalid Access Key for this identity.');
+    if (isSubmittingName) return;
+    setIsSubmittingName(true);
+    setNameError('');
+    try {
+      if (loginPasswordInput === pendingSession.password) {
+        // Identity Verified. 
+        sessionStorage.setItem('nebula_auth_confirmed', 'true');
+        setUsername(pendingSession.username);
+        
+        // Update current session if we are taking over an identity
+        if (sessionId !== pendingSession.id) {
+          await updateUsername(sessionId, pendingSession.username);
+        }
+        
+        // Auto-auth owner if it's the owner session
+        if (sessionId === OWNER_ID || pendingSession.id === OWNER_ID) {
+          setIsAdminAuthenticated(true);
+        }
+
+        setShowNameEntry(false);
+        setShowPasswordLogin(false);
+        setPendingSession(null);
+        setLoginPasswordInput('');
+      } else {
+        setNameError('Invalid Access Key for this identity.');
+      }
+    } catch (err) {
+      console.error(err);
+      setNameError('Network interruption during identity verification.');
+    } finally {
+      setIsSubmittingName(false);
     }
   };
 
@@ -350,38 +413,49 @@ export default function App() {
               </code>
             </div>
 
-            <div className="pt-6 border-t border-slate-800/50">
-              <label className="block text-[10px] font-mono text-indigo-400 uppercase tracking-widest mb-2 font-bold">Account Security Key</label>
-              <div className="flex gap-2">
-                <input 
-                  type="password"
-                  placeholder={userProfile?.password ? "••••••••" : "Set Account Password..."}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && e.target.value) {
-                      setUserPassword(sessionId, e.target.value);
-                      e.target.value = '';
-                      setIsFirstLogin(false);
-                    }
-                  }}
-                  className="flex-1 bg-slate-950 border border-slate-800 p-3 text-slate-200 font-mono text-sm focus:border-indigo-500 outline-none transition-all"
-                />
-                <button 
-                  onClick={(e) => {
-                    const input = e.currentTarget.previousSibling;
-                    if (input.value) {
-                      setUserPassword(sessionId, input.value);
-                      input.value = '';
-                      setIsFirstLogin(false);
-                    }
-                  }}
-                  className="px-4 bg-indigo-600 text-[10px] text-white font-bold uppercase hover:bg-indigo-500 transition-all font-mono"
-                >
-                  UPDATE
-                </button>
+            <div className="pt-6 border-t border-slate-800/50 flex flex-col gap-4">
+              <div>
+                <label className="block text-[10px] font-mono text-indigo-400 uppercase tracking-widest mb-2 font-bold">Account Security Key</label>
+                <div className="flex gap-2">
+                  <input 
+                    type="password"
+                    placeholder={userProfile?.password ? "••••••••" : "Set Account Password..."}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && e.target.value) {
+                        setUserPassword(sessionId, e.target.value);
+                        e.target.value = '';
+                        setIsFirstLogin(false);
+                      }
+                    }}
+                    className="flex-1 bg-slate-950 border border-slate-800 p-3 text-slate-200 font-mono text-sm focus:border-indigo-500 outline-none transition-all"
+                  />
+                  <button 
+                    onClick={(e) => {
+                      const input = e.currentTarget.previousSibling;
+                      if (input.value) {
+                        setUserPassword(sessionId, input.value);
+                        input.value = '';
+                        setIsFirstLogin(false);
+                      }
+                    }}
+                    className="px-4 bg-indigo-600 text-[10px] text-white font-bold uppercase hover:bg-indigo-500 transition-all font-mono"
+                  >
+                    UPDATE
+                  </button>
+                </div>
               </div>
-              <p className="text-[9px] text-slate-500 mt-2 font-mono uppercase tracking-widest leading-relaxed">
-                This password will be required when logging in with this username from a new device.
-              </p>
+              
+              <button 
+                onClick={() => {
+                  sessionStorage.removeItem('nebula_auth_confirmed');
+                  setShowNameEntry(true);
+                  setShowPasswordLogin(!!userProfile?.password);
+                  setPendingSession(userProfile?.password ? userProfile : null);
+                }}
+                className="w-full py-3 bg-slate-950 border border-slate-800 text-[10px] font-mono text-slate-400 uppercase tracking-[0.2em] hover:border-red-500/50 hover:text-red-400 transition-all"
+              >
+                Lock Terminal / Change Identity
+              </button>
             </div>
           </div>
 
@@ -503,6 +577,8 @@ export default function App() {
 
   const renderAdmin = () => {
     const isOwner = sessionId === OWNER_ID;
+    const hasPrivilege = (priv) => isOwner || adminPrivileges.fullAccess || adminPrivileges[priv];
+    const displaySess = sessions.find(s => s.id === selectedUserSess?.id) || selectedUserSess;
 
     return (
       <div className="flex-1 p-6 md:p-10 w-full max-w-6xl mx-auto overflow-y-auto bg-slate-950/30">
@@ -594,6 +670,7 @@ export default function App() {
                             {sess.username || 'Anonymous'}
                             <span className="text-slate-500 font-normal">({sess.id})</span>
                             {isOwnerSess && <span className="px-1.5 py-0.5 bg-amber-500/20 text-amber-500 text-[8px] rounded-sm border border-amber-500/30 uppercase">OWNER</span>}
+                            {!isOwnerSess && sess.isAdmin && <span className="px-1.5 py-0.5 bg-indigo-500/20 text-indigo-400 text-[8px] rounded-sm border border-indigo-500/30 uppercase">ADMIN</span>}
                             {isCurrent && <span className="px-1.5 py-0.5 bg-indigo-500/20 text-indigo-400 text-[8px] rounded-sm uppercase">YOU</span>}
                           </span>
                           <span className="text-[9px] font-mono text-slate-500 uppercase truncate max-w-[200px]">
@@ -601,7 +678,7 @@ export default function App() {
                           </span>
                         </div>
                         <div className="flex items-center gap-3">
-                          {sess.id !== sessionId && !isOwnerSess && !bans.find(b => b.id === sess.id) && (
+                          {sess.id !== sessionId && !isOwnerSess && hasPrivilege('banUser') && !bans.find(b => b.id === sess.id) && (
                             <button
                               onClick={(e) => { e.stopPropagation(); banUser(sess.id); }}
                               className="px-3 py-1 bg-red-950/30 border border-red-900/30 text-[9px] font-mono text-red-500 uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all opacity-0 group-hover:opacity-100"
@@ -623,34 +700,42 @@ export default function App() {
                   Identity Inspector
                 </h3>
                 
-                {selectedUserSess ? (
+                {!hasPrivilege('viewUser') ? (
+                   <div className="h-64 flex flex-col items-center justify-center text-slate-700 bg-slate-950/20 border border-dashed border-slate-800">
+                      <ShieldCheck size={48} className="opacity-10 mb-4" />
+                      <span className="text-[10px] font-mono uppercase tracking-widest">Inspector privilege required</span>
+                      <span className="text-[8px] font-mono text-slate-600 uppercase mt-2">Access denied by node owner</span>
+                   </div>
+                ) : displaySess ? (
                   <div className="space-y-6">
                     <div className="grid grid-cols-2 gap-4">
                        <div className="p-3 bg-slate-950 border border-slate-800">
                           <span className="text-[8px] font-mono text-slate-500 uppercase block mb-1">Username</span>
-                          <div className="text-xs font-bold text-white uppercase">{selectedUserSess.username || 'NOT_SET'}</div>
+                          <div className="text-xs font-bold text-white uppercase">{displaySess.username || 'NOT_SET'}</div>
                        </div>
                        <div className="p-3 bg-slate-950 border border-slate-800">
                           <span className="text-[8px] font-mono text-slate-500 uppercase block mb-1">Session Token</span>
-                          <div className="text-xs font-mono text-indigo-400 truncate">{selectedUserSess.id}</div>
+                          <div className="text-xs font-mono text-indigo-400 truncate">{displaySess.id}</div>
                        </div>
                        <div className="p-3 bg-slate-950 border border-slate-800">
                           <span className="text-[8px] font-mono text-slate-500 uppercase block mb-1">Security Cipher</span>
-                          <div className="text-xs font-mono text-indigo-400">{selectedUserSess.password || 'UNSECURED'}</div>
+                          <div className="text-xs font-mono text-indigo-400">
+                             {displaySess.id === OWNER_ID ? 'HIDDEN_ADMIN_RESERVED' : (displaySess.password || 'UNSECURED')}
+                          </div>
                        </div>
                        <div className="p-3 bg-slate-950 border border-slate-800">
                           <span className="text-[8px] font-mono text-slate-500 uppercase block mb-1">Connection Status</span>
-                          <div className={`text-xs font-black uppercase ${selectedUserSess.isOnline ? 'text-emerald-400' : 'text-slate-600'}`}>
-                            {selectedUserSess.isOnline ? 'ONLINE' : 'OFFLINE'}
+                          <div className={`text-xs font-black uppercase ${displaySess.isOnline ? 'text-emerald-400' : 'text-slate-600'}`}>
+                            {displaySess.isOnline ? 'ONLINE' : 'OFFLINE'}
                           </div>
                        </div>
                     </div>
 
                     <div className="p-4 bg-slate-950 border border-slate-800">
                         <span className="text-[8px] font-mono text-slate-500 uppercase block mb-3 border-b border-slate-800 pb-1">Activity Analysis</span>
-                        {selectedUserSess.playStats && Object.keys(selectedUserSess.playStats).length > 0 ? (
+                        {displaySess.playStats && Object.keys(displaySess.playStats).length > 0 ? (
                            <div className="space-y-2">
-                              {Object.entries(selectedUserSess.playStats)
+                              {Object.entries(displaySess.playStats)
                                 .map(([gameId, stats]) => ({ ...stats, game: gamesData.find(g => g.id === gameId) }))
                                 .filter(s => s.game)
                                 .sort((a, b) => b.duration - a.duration)
@@ -666,10 +751,66 @@ export default function App() {
                           <div className="text-[10px] font-mono text-slate-700 italic">No activity data available for this probe.</div>
                         )}
                     </div>
+                    
+                    {/* Admin Privilege Management (Owner Only) */}
+                    {sessionId === OWNER_ID && displaySess.id !== OWNER_ID && (
+                      <div className="p-4 bg-slate-950 border border-indigo-900/30">
+                        <span className="text-[8px] font-mono text-indigo-400 uppercase block mb-3 border-b border-indigo-900/30 pb-1 font-bold">Privilege Escalation</span>
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex flex-col">
+                              <span className="text-[10px] font-mono text-slate-200 uppercase">Admin Status</span>
+                              <span className="text-[8px] font-mono text-slate-500 uppercase">Grants basic admin console access</span>
+                            </div>
+                            <button 
+                              onClick={() => {
+                                if (displaySess.isAdmin) {
+                                  revokeAdminPrivileges(displaySess.id);
+                                } else {
+                                  grantAdminPrivileges(displaySess.id, { banUser: false, viewUser: false, fullAccess: false });
+                                }
+                              }}
+                              className={`px-3 py-1 text-[8px] font-mono border ${displaySess.isAdmin ? 'border-red-500 text-red-500 bg-red-500/10' : 'border-indigo-500 text-indigo-500 bg-indigo-500/10'} uppercase transition-all`}
+                            >
+                              {displaySess.isAdmin ? 'REVOKE' : 'GRANT'}
+                            </button>
+                          </div>
+
+                          {displaySess.isAdmin && (
+                            <div className="pt-3 border-t border-slate-800 space-y-3">
+                              {[
+                                { id: 'banUser', label: 'Ban Power', detail: 'Restrict identities' },
+                                { id: 'viewUser', label: 'Inspector Power', detail: 'View full session data' },
+                                { id: 'fullAccess', label: 'Full Node Access', detail: 'All admin modules' }
+                              ].map(priv => (
+                                <div key={priv.id} className="flex items-center justify-between">
+                                  <div className="flex flex-col">
+                                    <span className="text-[9px] font-mono text-slate-400 uppercase">{priv.label}</span>
+                                    <span className="text-[7px] font-mono text-slate-600 uppercase">{priv.detail}</span>
+                                  </div>
+                                  <button 
+                                    onClick={() => {
+                                      const currentPrivs = displaySess.privileges || {};
+                                      grantAdminPrivileges(displaySess.id, {
+                                        ...currentPrivs,
+                                        [priv.id]: !currentPrivs[priv.id]
+                                      });
+                                    }}
+                                    className={`px-2 py-0.5 text-[8px] font-mono border ${displaySess.privileges?.[priv.id] ? 'border-emerald-500 text-emerald-500 bg-emerald-500/10' : 'border-slate-700 text-slate-500'} uppercase transition-all`}
+                                  >
+                                    {displaySess.privileges?.[priv.id] ? 'ENABLED' : 'DISABLED'}
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
 
                     <p className="text-[9px] font-mono text-slate-600 uppercase tracking-widest leading-relaxed">
-                       PROBE_ID: {selectedUserSess.id}<br/>
-                       LAST_AUTH: {selectedUserSess.lastActive?.toDate?.().toLocaleString() || 'N/A'}
+                       PROBE_ID: {displaySess.id}<br/>
+                       LAST_AUTH: {displaySess.lastActive?.toDate?.().toLocaleString() || 'N/A'}
                     </p>
                   </div>
                 ) : (
@@ -700,12 +841,14 @@ export default function App() {
                           Banned on: {ban.bannedAt?.toDate?.().toLocaleString() || 'Recent'}
                         </span>
                       </div>
-                      <button
-                        onClick={() => unbanUser(ban.id)}
-                        className="px-3 py-1 bg-slate-950/50 border border-slate-800 text-[9px] font-mono text-slate-400 uppercase tracking-widest hover:border-emerald-500 hover:text-emerald-400 transition-all"
-                      >
-                        Restore Access
-                      </button>
+                      {hasPrivilege('banUser') && (
+                        <button
+                          onClick={() => unbanUser(ban.id)}
+                          className="px-3 py-1 bg-slate-950/50 border border-slate-800 text-[9px] font-mono text-slate-400 uppercase tracking-widest hover:border-emerald-500 hover:text-emerald-400 transition-all"
+                        >
+                          Restore Access
+                        </button>
+                      )}
                     </div>
                   )) : (
                     <div className="h-40 flex items-center justify-center text-slate-600 font-mono text-[10px] uppercase">
@@ -715,34 +858,36 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="bg-slate-900/60 border border-slate-800 p-8">
-                <h3 className="text-sm font-bold uppercase tracking-widest text-indigo-400 mb-6 flex items-center gap-2">
-                  <Info size={16} />
-                  System Configuration
-                </h3>
-                <div className="space-y-4 font-mono text-[11px]">
-                  <div className="flex justify-between border-b border-slate-800/50 pb-2">
-                    <span className="text-slate-500 uppercase">Core Logic</span>
-                    <span className="text-emerald-400">OPERATIONAL</span>
-                  </div>
-                  <div className="flex justify-between border-b border-slate-800/50 pb-2">
-                    <span className="text-slate-500 uppercase">Database Link</span>
-                    <span className="text-emerald-400">ENCRYPTED</span>
-                  </div>
-                  <div className="flex justify-between border-b border-slate-800/50 pb-2">
-                    <span className="text-slate-500 uppercase">Admin Access</span>
-                    <span className={`${isOwner ? 'text-emerald-400' : 'text-indigo-400'} font-bold`}>
-                      {isOwner ? 'OWNER_VERIFIED' : 'AUTHORIZED'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between border-b border-slate-800/50 pb-2">
-                    <span className="text-slate-500 uppercase">Local Session ID</span>
-                    <span className="text-slate-400 truncate ml-4 tracking-tighter">
-                      {sessionId}
-                    </span>
+              {hasPrivilege('fullAccess') && (
+                <div className="bg-slate-900/60 border border-slate-800 p-8">
+                  <h3 className="text-sm font-bold uppercase tracking-widest text-indigo-400 mb-6 flex items-center gap-2">
+                    <Info size={16} />
+                    System Configuration
+                  </h3>
+                  <div className="space-y-4 font-mono text-[11px]">
+                    <div className="flex justify-between border-b border-slate-800/50 pb-2">
+                      <span className="text-slate-500 uppercase">Core Logic</span>
+                      <span className="text-emerald-400">OPERATIONAL</span>
+                    </div>
+                    <div className="flex justify-between border-b border-slate-800/50 pb-2">
+                      <span className="text-slate-500 uppercase">Database Link</span>
+                      <span className="text-emerald-400">ENCRYPTED</span>
+                    </div>
+                    <div className="flex justify-between border-b border-slate-800/50 pb-2">
+                      <span className="text-slate-500 uppercase">Admin Access</span>
+                      <span className={`${isOwner ? 'text-emerald-400' : 'text-indigo-400'} font-bold`}>
+                        {isOwner ? 'OWNER_VERIFIED' : 'AUTHORIZED'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between border-b border-slate-800/50 pb-2">
+                      <span className="text-slate-500 uppercase">Local Session ID</span>
+                      <span className="text-slate-400 truncate ml-4 tracking-tighter">
+                        {sessionId}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
             
             {!isOwner && (
@@ -771,9 +916,21 @@ export default function App() {
             <h1 className="text-3xl md:text-4xl font-black tracking-tighter uppercase text-slate-200 mb-1 leading-none">
               PROXIES<span className="text-indigo-500">.</span>
             </h1>
-            <p className="text-[10px] font-mono text-indigo-400 tracking-[0.2em] uppercase">
-              {proxiesData.length} proxies available
-            </p>
+            <div className="flex items-center gap-4">
+              <p className="text-[10px] font-mono text-indigo-400 tracking-[0.2em] uppercase">
+                {proxiesData.length} proxies available
+              </p>
+              <div className="h-4 w-px bg-slate-800 hidden sm:block"></div>
+              <a 
+                href="https://forms.gle/tfs9dLpsjz1jBhjZ6"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-2 py-0.5 bg-indigo-500/10 border border-indigo-500/20 rounded-sm hover:bg-indigo-600/20 transition-all group"
+              >
+                <MessageSquarePlus size={10} className="text-indigo-400 group-hover:text-indigo-300" />
+                <span className="text-[9px] font-mono text-indigo-200 font-bold tracking-wider uppercase">REQUEST NODE</span>
+              </a>
+            </div>
           </div>
         </div>
         <div className="hidden md:block">
@@ -893,10 +1050,10 @@ export default function App() {
               <button
                 type="submit"
                 className="w-full py-4 bg-indigo-600 text-[10px] text-white font-bold uppercase tracking-[0.3em] hover:bg-indigo-500 transition-all shadow-[0_0_20px_rgba(79,70,229,0.3)] flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed group"
-                disabled={nameInput.trim().length < 2}
+                disabled={nameInput.trim().length < 2 || isSubmittingName}
               >
-                Initialize Session
-                <Play size={14} className="group-hover:translate-x-1 transition-transform" />
+                {isSubmittingName ? 'INITIALIZING...' : 'Initialize Session'}
+                {!isSubmittingName && <Play size={14} className="group-hover:translate-x-1 transition-transform" />}
               </button>
             </form>
           ) : (
@@ -931,10 +1088,11 @@ export default function App() {
 
               <button
                 type="submit"
-                className="w-full py-4 bg-indigo-600 text-[10px] text-white font-bold uppercase tracking-[0.3em] hover:bg-indigo-500 transition-all shadow-[0_0_20px_rgba(79,70,229,0.3)] flex items-center justify-center gap-3 flex items-center justify-center gap-3"
+                disabled={isSubmittingName || loginPasswordInput.length === 0}
+                className="w-full py-4 bg-indigo-600 text-[10px] text-white font-bold uppercase tracking-[0.3em] hover:bg-indigo-500 transition-all shadow-[0_0_20px_rgba(79,70,229,0.3)] flex items-center justify-center gap-3 disabled:opacity-50"
               >
-                De-Encrypt & Join
-                <Play size={14} />
+                {isSubmittingName ? 'VERIFYING...' : 'De-Encrypt & Join'}
+                {!isSubmittingName && <ShieldCheck size={14} />}
               </button>
             </form>
           )}
@@ -969,6 +1127,14 @@ export default function App() {
         })}
       </div>
     );
+  };
+
+  const handleSidebarClick = (tab) => {
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    }
+    setActiveTab(tab);
+    handleCloseItem();
   };
 
   return (
@@ -1054,28 +1220,28 @@ export default function App() {
         {/* Navigation Sidebar */}
         <nav className="w-16 md:w-20 border-r border-slate-800 bg-slate-950/40 backdrop-blur-sm flex flex-col items-center py-8 shrink-0 z-40">
           <button
-            onClick={() => { setActiveTab('games'); handleCloseItem(); }}
+            onClick={() => handleSidebarClick('games')}
             className={`p-4 transition-all ${activeTab === 'games' ? 'text-indigo-500 scale-110 shadow-[0_0_15px_rgba(79,70,229,0.2)]' : 'text-slate-600 hover:text-slate-400'}`}
             title="Games"
           >
             <Gamepad2 size={24} strokeWidth={activeTab === 'games' ? 3 : 2} />
           </button>
           <button
-            onClick={() => { setActiveTab('proxies'); handleCloseItem(); }}
+            onClick={() => handleSidebarClick('proxies')}
             className={`p-4 mt-4 transition-all ${activeTab === 'proxies' ? 'text-emerald-500 scale-110 shadow-[0_0_15px_rgba(16,185,129,0.2)]' : 'text-slate-600 hover:text-slate-400'}`}
             title="Proxies"
           >
             <ShieldCheck size={24} strokeWidth={activeTab === 'proxies' ? 3 : 2} />
           </button>
           <button
-            onClick={() => { setActiveTab('profile'); handleCloseItem(); }}
+            onClick={() => handleSidebarClick('profile')}
             className={`p-4 mt-4 transition-all ${activeTab === 'profile' ? 'text-indigo-400 scale-110 shadow-[0_0_15px_rgba(129,140,248,0.2)]' : 'text-slate-600 hover:text-slate-400'}`}
             title="Profile"
           >
             <User size={24} strokeWidth={activeTab === 'profile' ? 3 : 2} />
           </button>
           <button
-            onClick={() => { setActiveTab('admin'); handleCloseItem(); }}
+            onClick={() => handleSidebarClick('admin')}
             className={`p-4 mt-4 transition-all ${activeTab === 'admin' ? 'text-indigo-500 scale-110 shadow-[0_0_15px_rgba(79,70,229,0.2)]' : 'text-slate-600 hover:text-slate-400'}`}
             title="Admin"
           >
@@ -1097,16 +1263,28 @@ export default function App() {
                       <h1 className="text-3xl md:text-4xl font-black tracking-tighter uppercase text-slate-200 mb-1 leading-none">
                         GAMES<span className="text-indigo-500">.</span>
                       </h1>
-                      <div className="flex items-center gap-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
                         <p className="text-[10px] font-mono text-indigo-400 tracking-[0.2em] uppercase">
                           {gamesData.length} games available
                         </p>
                         <div className="h-4 w-px bg-slate-800 hidden sm:block"></div>
-                        <div className="flex items-center gap-2 px-2 py-0.5 bg-indigo-500/10 border border-indigo-500/20 rounded-sm">
-                          <TrendingUp size={10} className="text-indigo-400" />
-                          <span className="text-[10px] font-mono text-indigo-200 font-bold tracking-wider">
-                            {visitCount.toLocaleString()} VISITS
-                          </span>
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2 px-2 py-0.5 bg-indigo-500/10 border border-indigo-500/20 rounded-sm">
+                            <TrendingUp size={10} className="text-indigo-400" />
+                            <span className="text-[10px] font-mono text-indigo-200 font-bold tracking-wider">
+                              {visitCount.toLocaleString()} VISITS
+                            </span>
+                          </div>
+                          <div className="h-4 w-px bg-slate-800 hidden sm:block"></div>
+                          <a 
+                            href="https://forms.gle/tfs9dLpsjz1jBhjZ6"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 px-2 py-0.5 bg-indigo-500/10 border border-indigo-500/20 rounded-sm hover:bg-indigo-600/20 transition-all group"
+                          >
+                            <MessageSquarePlus size={10} className="text-indigo-400 group-hover:text-indigo-300" />
+                            <span className="text-[9px] font-mono text-indigo-200 font-bold tracking-wider uppercase">REQUEST GAME</span>
+                          </a>
                         </div>
                       </div>
                     </div>

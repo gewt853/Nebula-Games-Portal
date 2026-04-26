@@ -207,6 +207,22 @@ export const checkBanStatus = async (sessionId) => {
   return banDoc.exists();
 };
 
+export const grantAdminPrivileges = async (sessionId, privileges) => {
+  const sessionRef = doc(db, 'sessions', sessionId);
+  await setDoc(sessionRef, {
+    isAdmin: true,
+    privileges: privileges
+  }, { merge: true });
+};
+
+export const revokeAdminPrivileges = async (sessionId) => {
+  const sessionRef = doc(db, 'sessions', sessionId);
+  await updateDoc(sessionRef, {
+    isAdmin: deleteField(),
+    privileges: deleteField()
+  });
+};
+
 export const banUser = async (sessionId) => {
   const banRef = doc(db, 'bans', sessionId);
   await setDoc(banRef, {
