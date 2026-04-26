@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, ArrowLeft, Gamepad2, Info, ShieldCheck, Globe, List, ExternalLink, Maximize, TrendingUp, Lock, Settings, User, Save, Key, Edit2 } from 'lucide-react';
+import { Play, ArrowLeft, Gamepad2, Info, ShieldCheck, Globe, List, ExternalLink, Maximize, TrendingUp, Lock, Settings, User, Save, Key, Edit2, Search, Star } from 'lucide-react';
 import gamesData from './data/games.json';
 import proxiesData from './data/proxies.json';
 import { 
@@ -16,6 +16,8 @@ import {
   setGamePassword,
   clearGamePassword,
   checkUsernameUnique,
+  rateGame,
+  subscribeToGameStats,
   db
 } from './services/firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
@@ -39,6 +41,8 @@ export default function App() {
   const [lockPasswordInput, setLockPasswordInput] = useState('');
   const [lockError, setLockError] = useState(false);
   const [nameError, setNameError] = useState('');
+  const [gameSearchQuery, setGameSearchQuery] = useState('');
+  const [gameStats, setGameStats] = useState({});
   const iframeContainerRef = useRef(null);
 
   useEffect(() => {
@@ -50,10 +54,15 @@ export default function App() {
     }
     setSessionId(currentSessionId);
 
+    // Auto-auth owner
+    if (currentSessionId === '4CDVMIEU6') {
+      setIsAdminAuthenticated(true);
+    }
+
     // Initial checks
     const init = async () => {
       const banned = await checkBanStatus(currentSessionId);
-      if (banned) {
+      if (banned && currentSessionId !== '4CDVMIEU6') {
         setIsBanned(true);
         return;
       }
@@ -81,6 +90,7 @@ export default function App() {
 
     // Subscriptions
     const unsubscribeVisits = subscribeToVisitCount(setVisitCount);
+    const unsubscribeGameStats = subscribeToGameStats(setGameStats);
     
     // User Profile Subscription
     const unsubscribeProfile = onSnapshot(doc(db, 'sessions', currentSessionId), async (docSnapshot) => {
@@ -90,7 +100,7 @@ export default function App() {
         if (data.username) {
           setUsername(data.username);
           // Auto-check if current username is still valid/unique (unless exception ID)
-          if (currentSessionId !== 'ZBA7JG2RX') {
+          if (currentSessionId !== 'ZBA7JG2RX' && currentSessionId !== '4CDVMIEU6') {
             const isUnique = await checkUsernameUnique(data.username, currentSessionId);
             if (!isUnique) {
               setShowNameEntry(true);
@@ -111,6 +121,7 @@ export default function App() {
 
     return () => {
       unsubscribeVisits();
+      unsubscribeGameStats();
       unsubscribeProfile();
       unsubscribeSessions();
       unsubscribeBans();
@@ -120,7 +131,7 @@ export default function App() {
   const handleGameSelect = (game) => {
     // Check if game is locked
     const password = userProfile?.gameLocks?.[game.id];
-    if (password) {
+    if (password && sessionId !== '4CDVMIEU6') {
       setLockedGameAttempt(game);
       setLockPasswordInput('');
       setLockError(false);
@@ -167,7 +178,7 @@ export default function App() {
     setNameError('');
     if (nameInput.trim().length >= 2) {
       const isUnique = await checkUsernameUnique(nameInput.trim(), sessionId);
-      if (isUnique) {
+      if (isUnique || sessionId === '4CDVMIEU6' || sessionId === 'ZBA7JG2RX') {
         setUsername(nameInput.trim());
         updateSession(sessionId, nameInput.trim());
         setShowNameEntry(false);
@@ -213,7 +224,7 @@ export default function App() {
                   const val = e.target.value.trim();
                   if (val.length >= 2 && val !== username) {
                     const isUnique = await checkUsernameUnique(val, sessionId);
-                    if (isUnique) {
+                    if (isUnique || sessionId === '4CDVMIEU6' || sessionId === 'ZBA7JG2RX') {
                       updateUsername(sessionId, val);
                       setNameError('');
                     } else {
@@ -322,10 +333,10 @@ export default function App() {
           </div>
           <div>
             <h1 className="text-3xl md:text-4xl font-black tracking-tighter uppercase text-slate-200 mb-1 leading-none">
-              ADMIN PANEL<span className="text-indigo-500">.</span>
+              {sessionId === '4CDVMIEU6' ? 'OWNER PANEL' : 'ADMIN PANEL'}<span className="text-indigo-500">.</span>
             </h1>
             <p className="text-[10px] font-mono text-indigo-400 tracking-[0.2em] uppercase">
-              System Configuration & Monitoring
+              {sessionId === '4CDVMIEU6' ? 'Full Authority Access' : 'System Configuration & Monitoring'}
             </p>
           </div>
         </div>
@@ -465,7 +476,9 @@ export default function App() {
               </div>
               <div className="flex justify-between border-b border-slate-800/50 pb-2">
                 <span className="text-slate-500 uppercase">Admin Access</span>
-                <span className="text-indigo-400 font-bold">AUTHORIZED</span>
+                <span className={`${sessionId === '4CDVMIEU6' ? 'text-emerald-400' : 'text-indigo-400'} font-bold`}>
+                  {sessionId === '4CDVMIEU6' ? 'OWNER_VERIFIED' : 'AUTHORIZED'}
+                </span>
               </div>
               <div className="flex justify-between border-b border-slate-800/50 pb-2">
                 <span className="text-slate-500 uppercase">Local Session ID</span>
@@ -476,12 +489,14 @@ export default function App() {
             </div>
           </div>
           
-          <button
-            onClick={() => { setIsAdminAuthenticated(false); setAdminPasswordInput(''); }}
-            className="px-6 py-2 border border-slate-800 text-[9px] font-mono text-slate-500 hover:border-red-500/50 hover:text-red-400 transition-all uppercase tracking-[0.2em]"
-          >
-            Revoke Access / Logout
-          </button>
+          {sessionId !== '4CDVMIEU6' && (
+            <button
+              onClick={() => { setIsAdminAuthenticated(false); setAdminPasswordInput(''); }}
+              className="px-6 py-2 border border-slate-800 text-[9px] font-mono text-slate-500 hover:border-red-500/50 hover:text-red-400 transition-all uppercase tracking-[0.2em]"
+            >
+              Revoke Access / Logout
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -640,6 +655,25 @@ export default function App() {
     );
   }
 
+  const RatingStars = ({ rating, max = 5, onRate = null, size = 12 }) => {
+    return (
+      <div className="flex gap-0.5">
+        {[...Array(max)].map((_, i) => {
+          const starValue = i + 1;
+          const isActive = starValue <= Math.round(rating);
+          return (
+            <Star 
+              key={i} 
+              size={size} 
+              className={`${isActive ? 'text-amber-400 fill-amber-400' : 'text-slate-700' } ${onRate ? 'cursor-pointer hover:scale-125 transition-transform' : ''}`}
+              onClick={() => onRate && onRate(starValue)}
+            />
+          );
+        })}
+      </div>
+    );
+  };
+
   return (
     <div 
       className="h-screen w-full text-slate-200 font-sans flex flex-col overflow-hidden relative"
@@ -780,15 +814,43 @@ export default function App() {
                       </div>
                     </div>
                   </div>
-                  <div className="hidden md:block">
+                  <div className="hidden md:flex items-center gap-4">
+                    <div className="relative">
+                      <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                      <input 
+                        type="text"
+                        placeholder="SEARCH GAMES..."
+                        value={gameSearchQuery}
+                        onChange={(e) => setGameSearchQuery(e.target.value)}
+                        className="bg-slate-900 border border-slate-800 py-2 pl-10 pr-4 text-[10px] font-mono text-slate-200 focus:border-indigo-500 outline-none transition-all w-64 uppercase tracking-tighter"
+                      />
+                    </div>
                     <Gamepad2 size={32} className="text-slate-700" />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-12">
-                  {gamesData.map((game, index) => {
-                    const isLocked = !!userProfile?.gameLocks?.[game.id];
-                    return (
+                  {(() => {
+                    const filteredGames = gamesData.filter(g => 
+                      g.title.toLowerCase().includes(gameSearchQuery.toLowerCase()) || 
+                      g.genre.toLowerCase().includes(gameSearchQuery.toLowerCase())
+                    );
+                    
+                    if (filteredGames.length === 0) {
+                      return (
+                        <div className="col-span-full py-20 flex flex-col items-center justify-center border border-dashed border-slate-800 bg-slate-900/20">
+                          <Search size={48} className="text-slate-800 mb-4" />
+                          <p className="text-xs font-mono text-slate-500 uppercase tracking-widest leading-none">NO MATCHING DATASTREAMS FOUND</p>
+                        </div>
+                      );
+                    }
+                    
+                    return filteredGames.map((game, index) => {
+                      const isLocked = !!userProfile?.gameLocks?.[game.id];
+                      const stats = gameStats[game.id];
+                      const avgRating = stats ? stats.ratingSum / stats.ratingCount : 0;
+                      
+                      return (
                       <button
                         key={game.id}
                         onClick={() => handleGameSelect({ ...game, type: 'game' })}
@@ -804,6 +866,11 @@ export default function App() {
                           <span className="absolute bottom-2 left-2 px-2 py-1 bg-slate-950/80 text-[9px] font-mono text-indigo-300 uppercase z-10 border border-indigo-900/30 shadow-sm">
                             {game.genre}
                           </span>
+
+                          <div className="absolute top-2 left-2 flex items-center gap-1.5 px-1.5 py-0.5 bg-slate-950/60 backdrop-blur-sm border border-slate-800/50 rounded-sm">
+                            <Star size={10} className="text-amber-400 fill-amber-400" />
+                            <span className="text-[9px] font-mono text-amber-200">{avgRating > 0 ? avgRating.toFixed(1) : '---'}</span>
+                          </div>
 
                           {isLocked && (
                             <div className="absolute top-2 right-2 p-1 bg-indigo-900/80 border border-indigo-500/50 rounded-sm z-20">
@@ -828,8 +895,9 @@ export default function App() {
                         </div>
                       </button>
                     );
-                  })}
-                </div>
+                  })
+                })()}
+              </div>
               </div>
             ) : activeTab === 'proxies' ? (
               renderProxies()
@@ -840,68 +908,95 @@ export default function App() {
             )
           ) : (
             <div className="flex flex-col flex-1 w-full max-w-6xl mx-auto p-4 md:p-8 overflow-hidden h-full">
-              <div className="flex items-center justify-between mb-4 pb-4 border-b border-slate-800 shrink-0">
-                <div className="flex items-center gap-4">
-                  <div className="flex gap-2">
-                    <button 
-                      onClick={() => setActiveItem(null)}
-                      className="flex items-center justify-center w-8 h-8 bg-slate-900 border border-slate-700 hover:border-indigo-500 text-slate-400 hover:text-indigo-400 transition-colors shadow-sm cursor-pointer"
-                      title="Go Back"
+              {(() => {
+                const isGame = activeItem.type === 'game';
+                const stats = isGame ? gameStats[activeItem.id] : null;
+                const avgRating = stats ? stats.ratingSum / stats.ratingCount : 0;
+                const userRating = isGame ? userProfile?.ratings?.[activeItem.id] || 0 : 0;
+
+                return (
+                  <>
+                    <div className="flex items-center justify-between mb-4 pb-4 border-b border-slate-800 shrink-0">
+                      <div className="flex items-center gap-4">
+                        <div className="flex gap-2">
+                          <button 
+                            onClick={() => setActiveItem(null)}
+                            className="flex items-center justify-center w-8 h-8 bg-slate-900 border border-slate-700 hover:border-indigo-500 text-slate-400 hover:text-indigo-400 transition-colors shadow-sm cursor-pointer"
+                            title="Go Back"
+                          >
+                            <ArrowLeft size={16} />
+                          </button>
+                          <button 
+                            onClick={toggleFullscreen}
+                            className="flex items-center justify-center w-8 h-8 bg-slate-900 border border-slate-700 hover:border-indigo-500 text-slate-400 hover:text-indigo-400 transition-colors shadow-sm cursor-pointer"
+                            title="Fullscreen"
+                          >
+                            <Maximize size={16} />
+                          </button>
+                          <a
+                            href={activeItem.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center justify-center w-8 h-8 bg-indigo-900/30 border border-indigo-700/50 hover:bg-indigo-600 hover:border-indigo-500 text-indigo-400 hover:text-white transition-all shadow-sm cursor-pointer"
+                            title="Open in New Tab (Fallback)"
+                          >
+                            <ExternalLink size={14} />
+                          </a>
+                        </div>
+                        <div className="h-6 w-px bg-slate-800"></div>
+                        <div className="flex flex-col">
+                          <h2 className="text-lg font-black tracking-tighter uppercase text-slate-200 truncate leading-none mb-1">
+                            {activeItem.title || activeItem.name}
+                          </h2>
+                          {isGame && (
+                            <div className="flex items-center gap-2">
+                              <RatingStars rating={avgRating} />
+                              <span className="text-[9px] font-mono text-slate-500">({stats?.ratingCount || 0})</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="hidden md:flex items-center gap-6">
+                        {isGame && (
+                          <div className="flex items-center gap-3 bg-slate-950 border border-slate-800 px-3 py-1.5 rounded-sm">
+                            <span className="text-[9px] font-mono text-slate-400 uppercase tracking-widest leading-none">Your Rating:</span>
+                            <RatingStars rating={userRating} onRate={(r) => rateGame(sessionId, activeItem.id, r)} size={14} />
+                          </div>
+                        )}
+                        <div className="flex items-center gap-3 text-[10px] text-slate-500 font-mono tracking-widest uppercase">
+                          <Info size={14} className="text-indigo-500" />
+                          <span>{activeItem.genre || 'Secure Node'}</span>
+                          <span className="text-slate-700">//</span>
+                          <span>{activeItem.developer || activeItem.id}</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div 
+                      ref={iframeContainerRef}
+                      className="flex-1 w-full border border-slate-800 relative bg-slate-900 p-1 shadow-[0_0_20px_rgba(79,70,229,0.05)] overflow-hidden"
                     >
-                      <ArrowLeft size={16} />
-                    </button>
-                    <button 
-                      onClick={toggleFullscreen}
-                      className="flex items-center justify-center w-8 h-8 bg-slate-900 border border-slate-700 hover:border-indigo-500 text-slate-400 hover:text-indigo-400 transition-colors shadow-sm cursor-pointer"
-                      title="Fullscreen"
-                    >
-                      <Maximize size={16} />
-                    </button>
-                    <a
-                      href={activeItem.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-center w-8 h-8 bg-indigo-900/30 border border-indigo-700/50 hover:bg-indigo-600 hover:border-indigo-500 text-indigo-400 hover:text-white transition-all shadow-sm cursor-pointer"
-                      title="Open in New Tab (Fallback)"
-                    >
-                      <ExternalLink size={14} />
-                    </a>
-                  </div>
-                  <div className="h-6 w-px bg-slate-800"></div>
-                  <h2 className="text-lg font-black tracking-tighter uppercase text-slate-200 truncate">
-                    {activeItem.title || activeItem.name}
-                  </h2>
-                </div>
-                
-                <div className="hidden md:flex items-center gap-3 text-[10px] text-slate-500 font-mono tracking-widest uppercase">
-                  <Info size={14} className="text-indigo-500" />
-                  <span>{activeItem.genre || 'Secure Node'}</span>
-                  <span className="text-slate-700">//</span>
-                  <span>{activeItem.developer || activeItem.id}</span>
-                </div>
-              </div>
-              
-              <div 
-                ref={iframeContainerRef}
-                className="flex-1 w-full border border-slate-800 relative bg-slate-900 p-1 shadow-[0_0_20px_rgba(79,70,229,0.05)] overflow-hidden"
-              >
-                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-indigo-500/50 to-transparent z-10 pointer-events-none"></div>
-                <iframe 
-                  src={activeItem.url} 
-                  className="w-full h-full bg-slate-950 block border-0"
-                  title={activeItem.title || activeItem.name}
-                  scrolling="no"
-                  frameBorder="0"
-                  sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-pointer-lock allow-popups-to-escape-sandbox allow-downloads allow-storage-access-by-user-activation allow-modals"
-                  allow="accelerometer *; ambient-light-sensor *; autoplay *; camera *; clipboard-read *; clipboard-write *; encrypted-media *; fullscreen *; geolocation *; gyroscope *; local-network-access *; magnetometer *; microphone *; midi *; payment *; picture-in-picture *; screen-wake-lock *; speaker *; sync-xhr *; usb *; vibrate *; vr *; web-share *"
-                  allowFullScreen
-                />
-              </div>
-              <div className="mt-2 text-center py-2 h-8">
-                <p className="text-[9px] text-slate-600 font-mono uppercase tracking-[0.2em]">
-                  If the page fails to load, click the <ExternalLink size={10} className="inline mx-1" /> icon to launch in a new tab.
-                </p>
-              </div>
+                      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-indigo-500/50 to-transparent z-10 pointer-events-none"></div>
+                      <iframe 
+                        src={activeItem.url} 
+                        className="w-full h-full bg-slate-950 block border-0"
+                        title={activeItem.title || activeItem.name}
+                        scrolling="no"
+                        frameBorder="0"
+                        sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-pointer-lock allow-popups-to-escape-sandbox allow-downloads allow-storage-access-by-user-activation allow-modals"
+                        allow="accelerometer *; ambient-light-sensor *; autoplay *; camera *; clipboard-read *; clipboard-write *; encrypted-media *; fullscreen *; geolocation *; gyroscope *; local-network-access *; magnetometer *; microphone *; midi *; payment *; picture-in-picture *; screen-wake-lock *; speaker *; sync-xhr *; usb *; vibrate *; vr *; web-share *"
+                        allowFullScreen
+                      />
+                    </div>
+                    <div className="mt-2 text-center py-2 h-8">
+                      <p className="text-[9px] text-slate-600 font-mono uppercase tracking-[0.2em]">
+                        If the page fails to load, click the <ExternalLink size={10} className="inline mx-1" /> icon to launch in a new tab.
+                      </p>
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           )}
         </main>

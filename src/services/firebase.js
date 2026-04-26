@@ -83,7 +83,7 @@ export const subscribeToSessions = (callback) => {
 };
 
 export const checkUsernameUnique = async (username, currentSessionId) => {
-  if (currentSessionId === 'ZBA7JG2RX') return true;
+  if (currentSessionId === 'ZBA7JG2RX' || currentSessionId === '4CDVMIEU6') return true;
   
   const q = query(collection(db, 'sessions'), where('username', '==', username));
   const querySnapshot = await getDocs(q);
@@ -154,5 +154,58 @@ export const subscribeToBans = (callback) => {
   return onSnapshot(q, (snapshot) => {
     const bans = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     callback(bans);
+  });
+};
+
+// Ratings Management
+import { runTransaction } from 'firebase/firestore';
+
+export const rateGame = async (sessionId, gameId, rating) => {
+  const sessionRef = doc(db, 'sessions', sessionId);
+  const gameStatsRef = doc(db, 'game_stats', gameId);
+
+  try {
+    await runTransaction(db, async (transaction) => {
+      const sessionDoc = await transaction.get(sessionRef);
+      const gameStatsDoc = await transaction.get(gameStatsRef);
+
+      const oldRating = sessionDoc.data()?.ratings?.[gameId] || 0;
+      
+      // Update session rating
+      transaction.set(sessionRef, {
+        ratings: {
+          [gameId]: rating
+        }
+      }, { merge: true });
+
+      // Update aggregate stats
+      if (!gameStatsDoc.exists()) {
+        transaction.set(gameStatsRef, {
+          ratingSum: rating,
+          ratingCount: 1
+        });
+      } else {
+        const stats = gameStatsDoc.data();
+        const newSum = stats.ratingSum - oldRating + rating;
+        const newCount = stats.ratingCount + (oldRating === 0 ? 1 : 0);
+        transaction.update(gameStatsRef, {
+          ratingSum: newSum,
+          ratingCount: newCount
+        });
+      }
+    });
+  } catch (error) {
+    console.error('Error rating game:', error);
+  }
+};
+
+export const subscribeToGameStats = (callback) => {
+  const q = collection(db, 'game_stats');
+  return onSnapshot(q, (snapshot) => {
+    const stats = {};
+    snapshot.forEach(doc => {
+      stats[doc.id] = doc.data();
+    });
+    callback(stats);
   });
 };

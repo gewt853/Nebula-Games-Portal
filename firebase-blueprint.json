@@ -28,9 +28,23 @@
         "gameLocks": {
           "type": "object",
           "description": "Password protection for specific games, keyed by game ID."
+        },
+        "ratings": {
+          "type": "object",
+          "description": "User ratings for games, keyed by game ID."
         }
       },
       "required": ["lastActive", "isOnline"]
+    },
+    "game_stats": {
+      "title": "Game Statistics",
+      "description": "Aggregate statistics for games.",
+      "type": "object",
+      "properties": {
+        "ratingSum": { "type": "number" },
+        "ratingCount": { "type": "number" }
+      },
+      "required": ["ratingSum", "ratingCount"]
     },
     "ban": {
       "title": "Banned User",
@@ -55,6 +69,10 @@
     "bans/{banId}": {
       "schema": "ban",
       "description": "Banned session IDs."
+    },
+    "game_stats/{gameId}": {
+      "schema": "game_stats",
+      "description": "Aggregate statistics for specific games."
     }
   }
 }

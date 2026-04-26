@@ -7,26 +7,43 @@ service cloud.firestore {
     }
 
     // Helper functions
-    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function isValidId(id) { 
+      return id is string && id.size() <= 64 && id.matches('^[a-zA-Z0-9_\\-]+$'); 
+    }
     function incoming() { return request.resource.data; }
     function existing() { return resource.data; }
 
-    // Stats collection
+    // Stats collection (Visit Count)
     match /stats/{statsId} {
-      allow read: if true;
-      allow create, update: if true; // Simple visit counter for this demo
+      allow read: if isValidId(statsId);
+      allow create, update: if isValidId(statsId) 
+        && incoming().keys().hasAll(['visitCount'])
+        && incoming().visitCount is number;
+    }
+
+    // Game Stats collection (Ratings)
+    match /game_stats/{gameId} {
+      allow read: if isValidId(gameId);
+      allow list: if true;
+      // Only allow updates that modify ratingSum/ratingCount
+      allow write: if isValidId(gameId)
+        && incoming().ratingSum is number
+        && incoming().ratingCount is number;
     }
 
     // Sessions collection
     match /sessions/{sessionId} {
-      allow read: if true; // Admin needs to see sessions
-      allow write: if isValidId(sessionId); // Users can create/update their session
+      allow read: if isValidId(sessionId);
+      allow list: if true; // Needed for admin dashboard
+      allow write: if isValidId(sessionId)
+        && (incoming().lastActive == request.time || incoming().lastActive is string); // lastActive is serverTimestamp or ISO
     }
 
     // Bans collection
     match /bans/{banId} {
-      allow read: if true; // App needs to check if current user is banned
-      allow write: if true; // In this setup we don't have true auth-based admin check in rules yet without Firebase Auth
+      allow read: if isValidId(banId);
+      allow list: if true; // Needed for admin dashboard
+      allow write: if isValidId(banId);
     }
   }
 }
