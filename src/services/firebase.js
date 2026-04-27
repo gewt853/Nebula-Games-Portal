@@ -433,6 +433,19 @@ export const setAgreedSiteRules = async (sessionId) => {
   });
 };
 
+export const toggleFavorite = async (sessionId, gameId, isFavorite) => {
+  const sessionRef = doc(db, 'sessions', sessionId);
+  try {
+    await setDoc(sessionRef, {
+      favorites: {
+        [gameId]: isFavorite
+      }
+    }, { merge: true });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, `sessions/${sessionId}/favorites/${gameId}`);
+  }
+};
+
 export const createAuditLog = async (logData) => {
   const logId = Math.random().toString(36).substring(2, 11).toUpperCase();
   const logRef = doc(db, 'audit_logs', logId);

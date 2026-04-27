@@ -82,7 +82,7 @@ service cloud.firestore {
         )
       ) && (
         isValidSession(incoming()) || 
-        incoming().keys().hasAny(['ratings', 'username', 'gameLocks', 'progressions', 'password', 'isAdmin', 'privileges', 'playStats', 'agreedChatRules', 'agreedSiteRules', 'managedBy'])
+        incoming().keys().hasAny(['ratings', 'username', 'gameLocks', 'progressions', 'password', 'isAdmin', 'privileges', 'playStats', 'favorites', 'agreedChatRules', 'agreedSiteRules', 'managedBy'])
       );
     }
 

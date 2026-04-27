@@ -41,6 +41,10 @@
           "type": "object",
           "description": "Tracking game engagement, keyed by game ID with duration and lastPlayed fields."
         },
+        "favorites": {
+          "type": "object",
+          "description": "User favorite games, keyed by game ID (boolean value)."
+        },
         "isAdmin": {
           "type": "boolean",
           "description": "Whether this user has admin status."

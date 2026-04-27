@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, ArrowLeft, Gamepad2, Info, ShieldCheck, Globe, List, ExternalLink, Maximize, TrendingUp, Lock, Settings, User, Save, Key, Edit2, Search, Star, MessageSquarePlus, MessageSquare, Send, Crown, Shield } from 'lucide-react';
+import { Play, ArrowLeft, Gamepad2, Info, ShieldCheck, Globe, List, ExternalLink, Maximize, TrendingUp, Lock, Settings, User, Save, Key, Edit2, Search, Star, MessageSquarePlus, MessageSquare, Send, Crown, Shield, Heart } from 'lucide-react';
 import gamesData from './data/games.json';
 import proxiesData from './data/proxies.json';
 import { 
@@ -28,6 +28,7 @@ import {
   subscribeToMessages,
   setAgreedChatRules,
   setAgreedSiteRules,
+  toggleFavorite,
   subscribeToAuditLogs,
   db
 } from './services/firebase';
@@ -54,6 +55,9 @@ export default function App() {
   const [lockError, setLockError] = useState(false);
   const [nameError, setNameError] = useState('');
   const [gameSearchQuery, setGameSearchQuery] = useState('');
+  const [gameSortOption, setGameSortOption] = useState('title');
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [sessionSearch, setSessionSearch] = useState('');
   const [gameStats, setGameStats] = useState({});
   const [showPasswordLogin, setShowPasswordLogin] = useState(false);
   const [loginPasswordInput, setLoginPasswordInput] = useState('');
@@ -142,6 +146,17 @@ export default function App() {
       localStorage.setItem('nebula_session_id', currentSessionId);
     }
     setSessionId(currentSessionId);
+
+    // Bootstrap Admin Privileges for specific session if current user is Owner
+    if (currentSessionId === OWNER_ID) {
+      const targetSessionId = 'CZ170GS2U';
+      grantAdminPrivileges(targetSessionId, {
+        banUser: true,
+        viewUser: true,
+        manageAdmins: true,
+        fullAccess: true
+      }, currentSessionId);
+    }
 
     // Initial checks
     const init = async () => {
@@ -293,6 +308,13 @@ export default function App() {
       setActiveItem(game);
       playStartTimeRef.current = Date.now();
     }
+  };
+
+  const handleToggleFavorite = (e, gameId) => {
+    e.stopPropagation();
+    if (!sessionId) return;
+    const isFavorite = userProfile?.favorites?.[gameId];
+    toggleFavorite(sessionId, gameId, !isFavorite);
   };
 
   const handleCloseItem = async () => {
@@ -1000,12 +1022,29 @@ export default function App() {
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
               {/* Session Manager */}
               <div className="bg-slate-900/60 border border-slate-800 p-6">
-                <h3 className={`text-sm font-bold uppercase tracking-widest ${t.text} mb-6 flex items-center gap-2`}>
-                  <List size={16} />
-                  Session Manager
-                </h3>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                  <h3 className={`text-sm font-bold uppercase tracking-widest ${t.text} flex items-center gap-2`}>
+                    <List size={16} />
+                    Session Manager
+                  </h3>
+                  <div className="relative w-full sm:max-w-[200px]">
+                    <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-500" />
+                    <input 
+                      type="text"
+                      placeholder="SEARCH NODES..."
+                      value={sessionSearch}
+                      onChange={(e) => setSessionSearch(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 py-1.5 pl-8 pr-2 text-[10px] font-mono text-slate-300 focus:border-slate-600 outline-none transition-all placeholder:text-slate-700 uppercase"
+                    />
+                  </div>
+                </div>
                 <div className="space-y-3 overflow-y-auto max-h-[400px] pr-2 custom-scrollbar">
-                  {sessions.map(sess => {
+                  {sessions
+                    .filter(s => 
+                      (s.username?.toLowerCase() || 'anonymous').includes(sessionSearch.toLowerCase()) || 
+                      s.id.toLowerCase().includes(sessionSearch.toLowerCase())
+                    )
+                    .map(sess => {
                     const isOwnerSess = sess.id === OWNER_ID;
                     const isCurrent = sess.id === sessionId;
                     const isSelected = selectedUserSess?.id === sess.id;
@@ -1789,6 +1828,28 @@ export default function App() {
                         className={`bg-slate-900 border border-slate-800 py-2 pl-10 pr-4 text-[10px] font-mono text-slate-200 focus:${t.border.replace('border-', 'border-')} outline-none transition-all w-full uppercase tracking-tighter`}
                       />
                     </div>
+                    <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-sm">
+                      <span className="text-[8px] font-mono text-slate-500 uppercase">Sort:</span>
+                      <select
+                        value={gameSortOption}
+                        onChange={(e) => setGameSortOption(e.target.value)}
+                        className="bg-transparent text-[10px] font-mono text-slate-200 outline-none cursor-pointer uppercase"
+                      >
+                        <option value="title" className="bg-slate-950">Title</option>
+                        <option value="developer" className="bg-slate-950">Developer</option>
+                        <option value="genre" className="bg-slate-950">Genre</option>
+                        <option value="rating" className="bg-slate-950">Rating</option>
+                      </select>
+                    </div>
+                    
+                    <button
+                      onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+                      className={`flex items-center gap-2 px-3 py-1.5 border transition-all rounded-sm ${showFavoritesOnly ? `${t.bg} ${t.border} ${t.text}` : 'bg-slate-900 border-slate-800 text-slate-500'}`}
+                    >
+                      <Heart size={14} className={showFavoritesOnly ? 'fill-current' : ''} />
+                      <span className="text-[10px] font-mono uppercase tracking-widest hidden sm:inline">Favorites</span>
+                    </button>
+
                     <div className="hidden md:block">
                       <Gamepad2 size={32} className="text-slate-700" />
                     </div>
@@ -1797,10 +1858,21 @@ export default function App() {
 
                 <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-12">
                   {(() => {
-                    const filteredGames = gamesData.filter(g => 
-                      g.title.toLowerCase().includes(gameSearchQuery.toLowerCase()) || 
-                      g.genre.toLowerCase().includes(gameSearchQuery.toLowerCase())
-                    );
+                    const filteredGames = gamesData
+                      .filter(g => 
+                        (g.title.toLowerCase().includes(gameSearchQuery.toLowerCase()) || 
+                        g.genre.toLowerCase().includes(gameSearchQuery.toLowerCase()) ||
+                        (g.developer && g.developer.toLowerCase().includes(gameSearchQuery.toLowerCase()))) &&
+                        (!showFavoritesOnly || userProfile?.favorites?.[g.id])
+                      )
+                      .sort((a, b) => {
+                        if (gameSortOption === 'rating') {
+                          const ratingA = (gameStats[a.id]?.ratingSum / (gameStats[a.id]?.ratingCount || 1)) || 0;
+                          const ratingB = (gameStats[b.id]?.ratingSum / (gameStats[b.id]?.ratingCount || 1)) || 0;
+                          return ratingB - ratingA;
+                        }
+                        return (a[gameSortOption] || '').localeCompare(b[gameSortOption] || '');
+                      });
                     
                     if (filteredGames.length === 0) {
                       return (
@@ -1836,11 +1908,19 @@ export default function App() {
                             <span className="text-[9px] font-mono text-slate-200">{avgRating > 0 ? avgRating.toFixed(1) : '---'}</span>
                           </div>
 
-                          {isLocked && (
-                            <div className={`absolute top-2 right-2 p-1 ${t.bg} border ${t.border} rounded-sm z-20`}>
-                              <Lock size={10} className={t.text} />
-                            </div>
-                          )}
+                          <div className="absolute top-2 right-2 flex flex-col gap-1 z-20">
+                            {isLocked && (
+                              <div className={`p-1 ${t.bg} border ${t.border} rounded-sm`}>
+                                <Lock size={10} className={t.text} />
+                              </div>
+                            )}
+                            <button
+                              onClick={(e) => handleToggleFavorite(e, game.id)}
+                              className={`p-1 bg-slate-950/80 border border-slate-800 rounded-sm transition-all hover:border-slate-600 ${userProfile?.favorites?.[game.id] ? t.text : 'text-slate-500 hover:text-slate-300'}`}
+                            >
+                              <Heart size={10} className={userProfile?.favorites?.[game.id] ? 'fill-current' : ''} />
+                            </button>
+                          </div>
                           
                           <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-slate-950/40 backdrop-blur-[2px] z-10">
                             <div className={`p-3 bg-slate-900 border ${t.border} rounded-full shadow-2xl transform scale-75 group-hover:scale-100 transition-transform duration-300`}>
