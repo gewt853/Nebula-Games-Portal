@@ -4,139 +4,159 @@
     "title": "Tomb of the Mask",
     "developer": "Playgendary",
     "genre": "Arcade",
-    "url": "https://map-l.github.io/play/totm/"
+    "url": "https://map-l.github.io/play/totm/",
+    "description": "Navigate through infinite procedurally generated vertical labyrinths."
   },
   {
     "id": "basket-random",
     "title": "Basket Random",
     "developer": "Two Player Games",
     "genre": "Sports",
-    "url": "https://files.twoplayergames.org/files/games/other/Basket_Random/index.html"
+    "url": "https://files.twoplayergames.org/files/games/other/Basket_Random/index.html",
+    "description": "A wacky physics-based basketball game with unpredictable mechanics."
   },
   {
     "id": "cookie-clicker",
     "title": "Cookie Clicker",
     "developer": "Orteil",
     "genre": "Idle",
-    "url": "https://pizzaedition.win/assets/allgames/cookieclicker/index.html"
+    "url": "https://pizzaedition.win/assets/allgames/cookieclicker/index.html",
+    "description": "The ultimate idle game where you bake infinite cookies by clicking."
   },
   {
     "id": "retro-bowl-college",
     "title": "Retro Bowl College",
     "developer": "New Star Games",
     "genre": "Sports",
-    "url": "https://pizzaedition.win/assets/allgames/retrobowlcollege/index.html"
+    "url": "https://pizzaedition.win/assets/allgames/retrobowlcollege/index.html",
+    "description": "Manage your college football team and lead them to championship glory."
   },
   {
     "id": "block-blast",
     "title": "Block Blast",
     "developer": "Hungry Studio",
     "genre": "Puzzle",
-    "url": "https://pizzaedition.win/assets/allgames/blockblast/index.html"
+    "url": "https://pizzaedition.win/assets/allgames/blockblast/index.html",
+    "description": "A colorful block puzzle game that tests your spatial logic."
   },
   {
     "id": "drift-boss",
     "title": "Drift Boss",
     "developer": "MarketJS",
     "genre": "Racing",
-    "url": "https://pizzaedition.win/assets/allgames/driftboss/index.html"
+    "url": "https://pizzaedition.win/assets/allgames/driftboss/index.html",
+    "description": "Master the art of drifting on narrow platforms in this timing-based racer."
   },
   {
     "id": "level-devil",
     "title": "Level Devil",
     "developer": "Unearthed Games",
     "genre": "Platformer",
-    "url": "https://pizzaedition.win/assets/allgames/leveldevil/index.html"
+    "url": "https://pizzaedition.win/assets/allgames/leveldevil/index.html",
+    "description": "A platformer where the layout changes and surprises you at every jump."
   },
   {
     "id": "stacktris",
     "title": "Stacktris",
     "developer": "Martin Magni",
     "genre": "Puzzle",
-    "url": "https://pizzaedition.win/assets/allgames/stacktris/index.html"
+    "url": "https://pizzaedition.win/assets/allgames/stacktris/index.html",
+    "description": "A physics-based twist on Tetris where you stack blocks as high as possible."
   },
   {
     "id": "monkey-mart",
     "title": "Monkey Mart",
     "developer": "TinyDobbins",
     "genre": "Simulation",
-    "url": "https://pizzaedition.win/assets/allgames/monkeymart/index.html"
+    "url": "https://pizzaedition.win/assets/allgames/monkeymart/index.html",
+    "description": "Run your own supermarket for animals and keep the shelves stocked."
   },
   {
     "id": "moto-x3m",
     "title": "Moto X3M",
     "developer": "MadPuffers",
     "genre": "Racing",
-    "url": "https://pizzaedition.win/assets/allgames/moto-x3m/index.html"
+    "url": "https://pizzaedition.win/assets/allgames/moto-x3m/index.html",
+    "description": "High-speed bike racing through obstacle-filled levels with lethal traps."
   },
   {
     "id": "cluster-rush",
     "title": "Cluster Rush",
     "developer": "Landfall Games",
     "genre": "Arcade",
-    "url": "https://pizzaedition.win/assets/allgames/ClusterRush/index.html"
+    "url": "https://pizzaedition.win/assets/allgames/ClusterRush/index.html",
+    "description": "Jump from truck to truck in a chaotic, high-stakes driving dash."
   },
   {
     "id": "five-nights-at-epsteins",
     "title": "Five Nights at Epsteins",
     "developer": "Unknown",
     "genre": "Horror",
-    "url": "https://cdn.vietdp.com/file/vietdp-games/games/t12026/five-nights-at-epsteins/index.html"
+    "url": "https://cdn.vietdp.com/file/vietdp-games/games/t12026/five-nights-at-epsteins/index.html",
+    "description": "A parody horror game inspired by the FNAF series."
   },
   {
     "id": "polytrack",
     "title": "Polytrack",
     "developer": "Unknown",
     "genre": "Racing",
-    "url": "https://pizzaedition.win/assets/allgames/polytrack/index.html"
+    "url": "https://pizzaedition.win/assets/allgames/polytrack/index.html",
+    "description": "High-octane low-poly racing with tight controls and complex tracks."
   },
   {
     "id": "escape-road",
     "title": "Escape Road",
     "developer": "Unknown",
     "genre": "Arcade",
-    "url": "https://pizzaedition.win/assets/allgames/escaperoad/index.html"
+    "url": "https://pizzaedition.win/assets/allgames/escaperoad/index.html",
+    "description": "Drive through traffic and evade capture in this fast-paced arcade racer."
   },
   {
     "id": "happy-wheels",
     "title": "Happy Wheels",
     "developer": "Fancy Force",
     "genre": "Racing",
-    "url": "https://db.duckmath.org/html/happy_wheels/index.html"
+    "url": "https://db.duckmath.org/html/happy_wheels/index.html",
+    "description": "A gory physics-based racer where survival is rarely guaranteed."
   },
   {
     "id": "ovo",
     "title": "OvO",
     "developer": "Dedra Games",
     "genre": "Platformer",
-    "url": "https://db.duckmath.org/html/ovo/index.html"
+    "url": "https://db.duckmath.org/html/ovo/index.html",
+    "description": "A minimalist platformer focusing on momentum and precise parkour."
   },
   {
     "id": "1v1-lol",
     "title": "1v1.LOL",
     "developer": "JustPlay.LOL",
     "genre": "Shooter",
-    "url": "https://db.duckmath.org/html/1v1lol/index.html"
+    "url": "https://db.duckmath.org/html/1v1lol/index.html",
+    "description": "Build and battle in this competitive third-person shooter."
   },
   {
     "id": "suika-watermelon",
     "title": "Watermelon Game",
     "developer": "Aladdin X",
     "genre": "Puzzle",
-    "url": "https://playsuikagame.com/"
+    "url": "https://playsuikagame.com/",
+    "description": "Combine matching fruits to create the ultimate giant watermelon."
   },
   {
     "id": "impossible-quiz",
     "title": "The Impossible Quiz",
     "developer": "Splapp-me-do",
     "genre": "Puzzle",
-    "url": "https://theimpossiblequiz-online.github.io/file/"
+    "url": "https://theimpossiblequiz-online.github.io/file/",
+    "description": "Test your wits with abstract and nonsensical trivia questions."
   },
   {
     "id": "worlds-hardest-game",
     "title": "World's Hardest Game",
     "developer": "Stephen Critoph",
     "genre": "Skill",
-    "url": "https://dnrweqffuwjtx.cloudfront.net/games/2024/flash/worlds-hardest-game/index.html"
+    "url": "https://dnrweqffuwjtx.cloudfront.net/games/2024/flash/worlds-hardest-game/index.html",
+    "description": "Avoid blue dots and navigate through lethal mazes to reach the finish."
   }
 ]

@@ -1820,20 +1820,18 @@ export default function App() {
                       <button
                         key={game.id}
                         onClick={() => handleGameSelect({ ...game, type: 'game' })}
-                        className={`bg-slate-900/60 backdrop-blur-sm border border-slate-800 p-2 flex flex-col text-left group cursor-pointer transition-all hover:${t.border} hover:${t.bg} h-full relative`}
+                        className={`bg-slate-900/60 backdrop-blur-sm border border-slate-800 p-2 flex flex-col text-left group cursor-pointer transition-all hover:${t.border} hover:${t.bg} h-full relative overflow-hidden`}
                       >
+                        <div className={`absolute top-0 left-0 w-1 h-0 group-hover:h-full ${t.primary} transition-all duration-300`}></div>
+                        
                         <div className="w-full bg-slate-800 mb-3 relative overflow-hidden aspect-video flex justify-center items-center shadow-inner">
                           <div className={`absolute inset-0 bg-gradient-to-br ${t.bg} opacity-20`}></div>
                           
-                          <div className={`absolute -right-2 -bottom-2 font-black text-6xl text-slate-700/20 z-0 leading-none group-hover:${t.text.replace('text-', 'text-')}/20 transition-colors`}>
+                          <div className={`absolute -right-2 -bottom-2 font-black text-6xl text-slate-700/20 z-0 leading-none group-hover:${t.text.replace('text-', 'text-')}/10 transition-colors`}>
                             {String(index + 1).padStart(2, '0')}
                           </div>
-                          
-                          <span className={`absolute bottom-2 left-2 px-2 py-1 bg-slate-950/80 text-[9px] font-mono ${t.text} uppercase z-10 border border-slate-800 shadow-sm`}>
-                            {game.genre}
-                          </span>
 
-                          <div className="absolute top-2 left-2 flex items-center gap-1.5 px-1.5 py-0.5 bg-slate-950/60 backdrop-blur-sm border border-slate-800/50 rounded-sm">
+                          <div className="absolute top-2 left-2 flex items-center gap-1.5 px-1.5 py-0.5 bg-slate-950/80 backdrop-blur-sm border border-slate-800/50 rounded-sm z-10">
                             <Star size={10} className={`${t.text} fill-current`} />
                             <span className="text-[9px] font-mono text-slate-200">{avgRating > 0 ? avgRating.toFixed(1) : '---'}</span>
                           </div>
@@ -1843,20 +1841,42 @@ export default function App() {
                               <Lock size={10} className={t.text} />
                             </div>
                           )}
+                          
+                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-slate-950/40 backdrop-blur-[2px] z-10">
+                            <div className={`p-3 bg-slate-900 border ${t.border} rounded-full shadow-2xl transform scale-75 group-hover:scale-100 transition-transform duration-300`}>
+                              {isLocked ? <Lock size={20} className={t.text} /> : <Play size={20} className={t.text} fill="currentColor" />}
+                            </div>
+                          </div>
                         </div>
                         
                         <div className="relative z-10 flex flex-col flex-1 px-1">
-                          <h2 className="text-xs font-bold uppercase tracking-tight text-slate-200 group-hover:text-white transition-colors mb-1 truncate">
-                            {game.title}
-                          </h2>
+                          <div className="flex items-start justify-between gap-2 mb-1">
+                            <h2 className="text-xs font-bold uppercase tracking-tight text-slate-200 group-hover:text-white transition-colors line-clamp-1 flex-1">
+                              {game.title}
+                            </h2>
+                            <span className="px-1.5 py-0.5 bg-slate-950/80 text-[8px] font-mono whitespace-nowrap text-slate-500 uppercase rounded-sm border border-slate-800 shadow-sm">
+                              {game.genre}
+                            </span>
+                          </div>
                           
-                          <p className="text-[10px] text-slate-500 uppercase mb-3 truncate">
+                          <p className="text-[9px] text-slate-500 uppercase mb-2 font-medium tracking-wider">
                             By {game.developer}
                           </p>
                           
-                          <div className={`mt-auto flex items-center gap-2 text-[10px] ${t.text} font-bold uppercase tracking-widest group-hover:text-white transition-colors`}>
-                            {isLocked ? <Lock size={12} /> : <Play className="fill-current" size={12} />}
-                            {isLocked ? 'Verify Access' : 'Launch Game'}
+                          {game.description && (
+                            <p className="text-[9px] text-slate-400/80 leading-tight mb-4 line-clamp-2 italic opacity-60 group-hover:opacity-100 transition-opacity">
+                              {game.description}
+                            </p>
+                          )}
+                          
+                          <div className={`mt-auto pt-2 border-t border-slate-800/50 flex items-center justify-between text-[10px] font-mono uppercase tracking-widest`}>
+                            <span className={`${t.text} font-bold flex items-center gap-1.5`}>
+                              <div className={`w-1.5 h-1.5 rounded-full ${isLocked ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]' : 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] animate-pulse'}`}></div>
+                              {isLocked ? 'Restricted' : 'Active'}
+                            </span>
+                            <div className={`flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0 ${t.text}`}>
+                              <Play size={10} className="fill-current" />
+                            </div>
                           </div>
                         </div>
                       </button>
