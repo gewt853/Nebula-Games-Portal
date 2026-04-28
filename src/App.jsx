@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, ArrowLeft, Gamepad2, Info, ShieldCheck, Globe, List, ExternalLink, Maximize, TrendingUp, Lock, Settings, User, Save, Key, Edit2, Search, Star, MessageSquarePlus, MessageSquare, Send, Crown, Shield, Heart } from 'lucide-react';
+import { Play, ArrowLeft, Gamepad2, Info, ShieldCheck, Globe, List, ExternalLink, Maximize, TrendingUp, Lock, Settings, User, Save, Key, Edit2, Search, Star, MessageSquarePlus, MessageSquare, Send, Crown, Shield, Heart, Clock, Sparkles } from 'lucide-react';
 import gamesData from './data/games.json';
 import proxiesData from './data/proxies.json';
 import { 
@@ -1856,6 +1856,75 @@ export default function App() {
                   </div>
                 </div>
 
+                {/* Logic for Recently Played and New Arrivals */}
+                {(() => {
+                  const recentlyPlayed = Object.entries(userProfile?.playStats || {})
+                    .sort(([, a], [, b]) => new Date(b.lastPlayed) - new Date(a.lastPlayed))
+                    .slice(0, 4)
+                    .map(([id]) => gamesData.find(g => g.id === id))
+                    .filter(Boolean);
+
+                  const newArrivals = [...gamesData].slice(-4).reverse();
+
+                  if (gameSearchQuery || showFavoritesOnly) return null;
+
+                  return (
+                    <div className="w-full mb-10 space-y-10">
+                      {recentlyPlayed.length > 0 && (
+                        <section>
+                          <div className="flex items-center gap-2 mb-4">
+                            <Clock size={14} className={t.text} />
+                            <h2 className="text-[10px] font-mono font-bold uppercase tracking-[0.3em] text-slate-500">Recently Played</h2>
+                          </div>
+                          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                            {recentlyPlayed.map(game => (
+                              <div
+                                key={`recent-${game.id}`}
+                                onClick={() => handleGameSelect({ ...game, type: 'game' })}
+                                className={`bg-slate-900/40 border border-slate-800/50 p-2 flex items-center gap-3 group cursor-pointer hover:${t.border} transition-all`}
+                              >
+                                <div className="w-10 h-10 bg-slate-950 flex items-center justify-center border border-slate-800">
+                                  <Gamepad2 size={16} className="text-slate-700" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="text-[10px] font-bold text-slate-200 truncate uppercase">{game.title}</h4>
+                                  <p className="text-[8px] font-mono text-slate-600 truncate uppercase">{game.genre}</p>
+                                </div>
+                                <ArrowLeft size={12} className="text-slate-800 -rotate-180 group-hover:text-slate-400 transition-colors" />
+                              </div>
+                            ))}
+                          </div>
+                        </section>
+                      )}
+
+                      <section>
+                        <div className="flex items-center gap-2 mb-4">
+                          <Sparkles size={14} className={t.text} />
+                          <h2 className="text-[10px] font-mono font-bold uppercase tracking-[0.3em] text-slate-500">New Arrivals</h2>
+                        </div>
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                          {newArrivals.map(game => (
+                            <div
+                              key={`new-${game.id}`}
+                              onClick={() => handleGameSelect({ ...game, type: 'game' })}
+                              className={`bg-slate-900/60 border border-slate-800 p-3 flex flex-col group cursor-pointer hover:${t.bg} transition-all relative overflow-hidden`}
+                            >
+                              <div className={`absolute top-0 right-0 px-1.5 py-0.5 ${t.bg} text-[7px] font-mono ${t.text} uppercase tracking-tighter border-l border-b ${t.border}`}>NEW</div>
+                              <h4 className="text-[11px] font-black text-slate-100 mb-1 uppercase tracking-tighter">{game.title}</h4>
+                              <p className="text-[8px] font-mono text-slate-500 uppercase">{game.developer || 'Unknown'}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </section>
+                      
+                      <div className="pt-4 border-t border-slate-900 flex items-center gap-2">
+                        <List size={12} className="text-slate-700" />
+                        <h2 className="text-[10px] font-mono font-bold uppercase tracking-[0.3em] text-slate-700">All Datastreams</h2>
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-12">
                   {(() => {
                     const filteredGames = gamesData
@@ -1889,9 +1958,17 @@ export default function App() {
                       const avgRating = stats ? stats.ratingSum / stats.ratingCount : 0;
                       
                       return (
-                      <button
+                      <div
                         key={game.id}
+                        role="button"
+                        tabIndex={0}
                         onClick={() => handleGameSelect({ ...game, type: 'game' })}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            handleGameSelect({ ...game, type: 'game' });
+                          }
+                        }}
                         className={`bg-slate-900/60 backdrop-blur-sm border border-slate-800 p-2 flex flex-col text-left group cursor-pointer transition-all hover:${t.border} hover:${t.bg} h-full relative overflow-hidden`}
                       >
                         <div className={`absolute top-0 left-0 w-1 h-0 group-hover:h-full ${t.primary} transition-all duration-300`}></div>
@@ -1959,7 +2036,7 @@ export default function App() {
                             </div>
                           </div>
                         </div>
-                      </button>
+                      </div>
                     );
                   })
                 })()}
