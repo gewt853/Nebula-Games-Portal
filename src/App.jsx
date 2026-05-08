@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, ArrowLeft, Gamepad2, Info, ShieldCheck, Globe, List, ExternalLink, Maximize, TrendingUp, Lock, Settings, User, Save, Key, Edit2, Search, Star, MessageSquarePlus, MessageSquare, Send, Crown, Shield, Heart, Clock, Sparkles } from 'lucide-react';
+import { Play, ArrowLeft, Gamepad2, Info, ShieldCheck, Globe, List, ExternalLink, Maximize, TrendingUp, Lock, Settings, User, Save, Key, Edit2, Search, Star, MessageSquarePlus, MessageSquare, Send, Crown, Shield, Heart, Clock, Sparkles, Music, Volume2 } from 'lucide-react';
 import gamesData from './data/games.json';
 import proxiesData from './data/proxies.json';
 import { 
@@ -15,6 +15,7 @@ import {
   revokeAdminPrivileges,
   getSession,
   updateUsername,
+  updateBackgroundMusic,
   setGamePassword,
   clearGamePassword,
   updateGamePlayTime,
@@ -137,6 +138,24 @@ export default function App() {
   };
 
   const t = THEMES[siteTheme] || THEMES.indigo;
+  
+  const getMusicEmbedUrl = (url) => {
+    if (!url) return null;
+    
+    // Spotify
+    const spotifyMatch = url.match(/spotify\.com\/playlist\/([a-zA-Z0-9]+)/);
+    if (spotifyMatch) {
+      return `https://open.spotify.com/embed/playlist/${spotifyMatch[1]}`;
+    }
+    
+    // YouTube / YouTube Music
+    const ytMatch = url.match(/[?&]list=([a-zA-Z0-9_-]+)/);
+    if (ytMatch) {
+      return `https://www.youtube.com/embed/videoseries?list=${ytMatch[1]}&autoplay=1`;
+    }
+    
+    return null;
+  };
 
   useEffect(() => {
     // Session ID management
@@ -822,6 +841,61 @@ export default function App() {
                     >
                       UPDATE
                     </button>
+                  </div>
+                </div>
+
+                {/* Background Music Settings */}
+                <div className="pt-6 border-t border-slate-800/50 flex flex-col gap-4">
+                  <div>
+                    <label htmlFor="music-url-input" className="block text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-2 font-bold flex items-center gap-2">
+                      <Music size={12} className={t.text} /> Background Frequency (Spotify/YT)
+                    </label>
+                    <p className="text-[8px] font-mono text-slate-600 uppercase mb-3 leading-relaxed">
+                      Link a Spotify or YouTube Music playlist to stream audio in the background of your session.
+                    </p>
+                    <div className="flex gap-2 mb-4">
+                      <input 
+                        id="music-url-input"
+                        type="text"
+                        placeholder="Paste Playlist URL..."
+                        defaultValue={userProfile?.backgroundMusic?.url || ''}
+                        onBlur={(e) => {
+                          const url = e.target.value.trim();
+                          if (url !== (userProfile?.backgroundMusic?.url || '')) {
+                            updateBackgroundMusic(sessionId, { 
+                              url, 
+                              enabled: userProfile?.backgroundMusic?.enabled !== false 
+                            });
+                          }
+                        }}
+                        className={`flex-1 bg-slate-950 border border-slate-800 p-3 text-slate-200 font-mono text-xs focus:${t.border.replace('border-', 'border-')} outline-none transition-all placeholder:text-slate-800`}
+                      />
+                    </div>
+                    
+                    {userProfile?.backgroundMusic?.url && (
+                      <div className="flex items-center justify-between p-3 bg-slate-950 border border-slate-800/50">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-8 h-8 ${t.bg} border ${t.border} flex items-center justify-center`}>
+                            <Volume2 size={14} className={t.text} />
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-[9px] font-mono text-slate-300 uppercase font-black tracking-widest">Frequency Link Active</span>
+                            <span className="text-[7px] font-mono text-slate-600 uppercase">Subspace Audio Streaming Available</span>
+                          </div>
+                        </div>
+                        <button 
+                          onClick={() => {
+                            updateBackgroundMusic(sessionId, { 
+                              ...userProfile?.backgroundMusic, 
+                              enabled: !userProfile?.backgroundMusic?.enabled 
+                            });
+                          }}
+                          className={`px-3 py-1 text-[8px] font-mono border ${userProfile?.backgroundMusic?.enabled !== false ? 'border-emerald-500 text-emerald-500 bg-emerald-500/10' : 'border-red-500 text-red-500 bg-red-500/10'} uppercase transition-all font-black`}
+                        >
+                          {userProfile?.backgroundMusic?.enabled !== false ? 'CONNECTED' : 'DISCONNECTED'}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
                 
@@ -1963,8 +2037,8 @@ export default function App() {
                                 onClick={() => handleGameSelect({ ...game, type: 'game' })}
                                 className={`bg-slate-900/40 border border-slate-800/50 p-2 flex items-center gap-3 group cursor-pointer hover:${t.border} transition-all`}
                               >
-                                <div className="w-10 h-10 bg-slate-950 flex items-center justify-center border border-slate-800">
-                                  <Gamepad2 size={16} className="text-slate-700" />
+                                <div className={`w-10 h-10 ${t.bg} flex items-center justify-center border ${t.border} overflow-hidden shrink-0`}>
+                                  <Gamepad2 size={16} className={t.text} />
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <h4 className="text-[10px] font-bold text-slate-200 truncate uppercase">{game.title}</h4>
@@ -2003,6 +2077,15 @@ export default function App() {
                                 <div className={`px-1.5 py-0.5 ${t.bg} text-[7px] font-mono ${t.text} uppercase tracking-tighter border-l border-b ${t.border}`}>NEW</div>
                               </div>
                               <h4 className="text-[11px] font-black text-slate-100 mb-1 uppercase tracking-tighter">{game.title}</h4>
+                              <div className={`w-full aspect-video bg-gradient-to-br ${t.bg} to-slate-950 mb-2 overflow-hidden border ${t.border} flex items-center justify-center relative`}>
+                                <div className={`absolute inset-0 bg-slate-950/20`}></div>
+                                <Gamepad2 size={24} className={`${t.text} opacity-20`} />
+                                <div className="absolute inset-0 flex items-center justify-center p-4">
+                                  <span className="text-[10px] font-black text-slate-500/40 uppercase tracking-tighter text-center line-clamp-2">
+                                    {game.title}
+                                  </span>
+                                </div>
+                              </div>
                               <p className="text-[8px] font-mono text-slate-500 uppercase">{game.developer || 'Unknown'}</p>
                             </div>
                           ))}
@@ -2066,8 +2149,21 @@ export default function App() {
                       >
                         <div className={`absolute top-0 left-0 w-1 h-0 group-hover:h-full ${t.primary} transition-all duration-300`} aria-hidden="true"></div>
                         
-                        <div className="w-full bg-slate-800 mb-3 relative overflow-hidden aspect-video flex justify-center items-center shadow-inner" aria-hidden="true">
-                          <div className={`absolute inset-0 bg-gradient-to-br ${t.bg} opacity-20`}></div>
+                        <div className={`w-full aspect-video bg-gradient-to-br ${t.bg} to-slate-950 mb-3 relative overflow-hidden flex justify-center items-center shadow-inner border border-slate-800/50 group-hover:${t.border} transition-colors`} aria-hidden="true">
+                          <div className={`absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.1)_1px,transparent_1px)] bg-[size:10px_10px]`}></div>
+                          
+                          <div className="relative z-10 flex flex-col items-center">
+                            <div className={`w-12 h-12 rounded-full ${t.bg} flex items-center justify-center mb-2 border ${t.border} shadow-lg backdrop-blur-sm`}>
+                              <Gamepad2 size={24} className={t.text} />
+                            </div>
+                            <div className="text-[7px] font-mono text-slate-600 uppercase tracking-[0.4em] font-black">stream encrypted</div>
+                          </div>
+                          
+                          <div className={`absolute -right-4 -bottom-4 font-black text-7xl text-slate-800/10 z-0 leading-none transition-colors`}>
+                            {game.id.substring(0, 2).toUpperCase()}
+                          </div>
+                          
+                          <div className="absolute inset-0 bg-slate-950/30 group-hover:bg-transparent transition-colors duration-300"></div>
                           
                           <div className={`absolute -right-2 -bottom-2 font-black text-6xl text-slate-700/20 z-0 leading-none group-hover:${t.text.replace('text-', 'text-')}/10 transition-colors`}>
                             {String(index + 1).padStart(2, '0')}
@@ -2244,6 +2340,33 @@ export default function App() {
           )}
         </main>
       </div>
+
+      {/* Background Audio Subspace */}
+      {userProfile?.backgroundMusic?.url && userProfile?.backgroundMusic?.enabled !== false && (
+        <div className="fixed bottom-6 right-6 z-[9999] transition-all duration-500 transform hover:scale-105 group">
+          <div className={`p-1 bg-slate-900 border ${t.border} shadow-2xl backdrop-blur-md relative overflow-hidden`}>
+             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-indigo-500 to-transparent animate-[pan_3s_linear_infinite]"></div>
+             <iframe 
+               src={getMusicEmbedUrl(userProfile.backgroundMusic.url)} 
+               width="80" 
+               height="80" 
+               frameBorder="0" 
+               allowTransparency="true" 
+               allow="encrypted-media; autoplay" 
+               className="rounded-sm shadow-inner"
+               title="Background Audio Stream"
+             />
+             <div className="absolute -top-1 -right-1">
+               <div className={`w-3 h-3 ${t.primary} rounded-full animate-pulse shadow-[0_0_10px_${t.accent}]`}></div>
+             </div>
+             
+             {/* Interaction overlay to help identify what this is */}
+             <div className="absolute inset-x-0 bottom-0 py-0.5 bg-slate-950/80 text-[6px] font-mono text-center text-slate-500 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+               Audio Link Active
+             </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -186,6 +186,15 @@ export const updateSiteTheme = async (sessionId, theme) => {
   }
 };
 
+export const updateBackgroundMusic = async (sessionId, musicConfig) => {
+  const sessionRef = doc(db, 'sessions', sessionId);
+  try {
+    await setDoc(sessionRef, { backgroundMusic: musicConfig }, { merge: true });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, `sessions/${sessionId}`);
+  }
+};
+
 export const saveGameProgress = async (sessionId, gameId, progression) => {
   const sessionRef = doc(db, 'sessions', sessionId);
   await setDoc(sessionRef, {

@@ -5,6 +5,7 @@
     "developer": "Playgendary",
     "genre": "Arcade",
     "url": "https://map-l.github.io/play/totm/",
+    "thumbnail": "https://img.poki.com/cdn-cgi/image/quality=78,width=400,height=400,fit=cover,f=auto/3c059424-6997-4bd9-93b7-7e6d8a7c3d3d.png",
     "description": "Navigate through infinite procedurally generated vertical labyrinths."
   },
   {
@@ -13,6 +14,7 @@
     "developer": "Two Player Games",
     "genre": "Sports",
     "url": "https://files.twoplayergames.org/files/games/other/Basket_Random/index.html",
+    "thumbnail": "https://img.poki.com/cdn-cgi/image/quality=78,width=400,height=400,fit=cover,f=auto/fb491568c078021c327ff77f88e104e7.png",
     "description": "A wacky physics-based basketball game with unpredictable mechanics."
   },
   {
@@ -21,6 +23,7 @@
     "developer": "Orteil",
     "genre": "Idle",
     "url": "https://pizzaedition.win/assets/allgames/cookieclicker/index.html",
+    "thumbnail": "https://raw.githubusercontent.com/3kh0/3kh0-assets/main/thumbnails/cookie-clicker.png",
     "description": "The ultimate idle game where you bake infinite cookies by clicking."
   },
   {
@@ -29,6 +32,7 @@
     "developer": "New Star Games",
     "genre": "Sports",
     "url": "https://pizzaedition.win/assets/allgames/retrobowlcollege/index.html",
+    "thumbnail": "https://raw.githubusercontent.com/3kh0/3kh0-assets/main/thumbnails/retro-bowl-college.png",
     "description": "Manage your college football team and lead them to championship glory."
   },
   {
@@ -37,6 +41,7 @@
     "developer": "Hungry Studio",
     "genre": "Puzzle",
     "url": "https://pizzaedition.win/assets/allgames/blockblast/index.html",
+    "thumbnail": "https://raw.githubusercontent.com/3kh0/3kh0-assets/main/thumbnails/block-blast.png",
     "description": "A colorful block puzzle game that tests your spatial logic."
   },
   {
@@ -45,6 +50,7 @@
     "developer": "MarketJS",
     "genre": "Racing",
     "url": "https://pizzaedition.win/assets/allgames/driftboss/index.html",
+    "thumbnail": "https://raw.githubusercontent.com/3kh0/3kh0-assets/main/thumbnails/drift-boss.png",
     "description": "Master the art of drifting on narrow platforms in this timing-based racer."
   },
   {
@@ -53,6 +59,7 @@
     "developer": "Unearthed Games",
     "genre": "Platformer",
     "url": "https://pizzaedition.win/assets/allgames/leveldevil/index.html",
+    "thumbnail": "https://raw.githubusercontent.com/3kh0/3kh0-assets/main/thumbnails/level-devil.png",
     "description": "A platformer where the layout changes and surprises you at every jump."
   },
   {
@@ -61,6 +68,7 @@
     "developer": "Martin Magni",
     "genre": "Puzzle",
     "url": "https://pizzaedition.win/assets/allgames/stacktris/index.html",
+    "thumbnail": "https://raw.githubusercontent.com/3kh0/3kh0-assets/main/thumbnails/stacktris.png",
     "description": "A physics-based twist on Tetris where you stack blocks as high as possible."
   },
   {
@@ -69,6 +77,7 @@
     "developer": "TinyDobbins",
     "genre": "Simulation",
     "url": "https://pizzaedition.win/assets/allgames/monkeymart/index.html",
+    "thumbnail": "https://img.poki.com/cdn-cgi/image/quality=78,width=400,height=400,fit=cover,f=auto/0cf34fae-4f0e-473d-9d7a-11608670f5e7.png",
     "description": "Run your own supermarket for animals and keep the shelves stocked."
   },
   {
@@ -77,6 +86,7 @@
     "developer": "MadPuffers",
     "genre": "Racing",
     "url": "https://pizzaedition.win/assets/allgames/moto-x3m/index.html",
+    "thumbnail": "https://img.poki.com/cdn-cgi/image/quality=78,width=400,height=400,fit=cover,f=auto/29598287754b2382c76cd771f2b604b7.png",
     "description": "High-speed bike racing through obstacle-filled levels with lethal traps."
   },
   {
@@ -85,6 +95,7 @@
     "developer": "Landfall Games",
     "genre": "Arcade",
     "url": "https://pizzaedition.win/assets/allgames/ClusterRush/index.html",
+    "thumbnail": "https://raw.githubusercontent.com/3kh0/3kh0-assets/main/thumbnails/cluster-rush.png",
     "description": "Jump from truck to truck in a chaotic, high-stakes driving dash."
   },
   {
@@ -93,6 +104,7 @@
     "developer": "Unknown",
     "genre": "Horror",
     "url": "https://cdn.vietdp.com/file/vietdp-games/games/t12026/five-nights-at-epsteins/index.html",
+    "thumbnail": "https://raw.githubusercontent.com/3kh0/3kh0-assets/main/thumbnails/fnaf.png",
     "description": "A parody horror game inspired by the FNAF series."
   },
   {
@@ -101,6 +113,7 @@
     "developer": "Unknown",
     "genre": "Racing",
     "url": "https://pizzaedition.win/assets/allgames/polytrack/index.html",
+    "thumbnail": "https://raw.githubusercontent.com/3kh0/3kh0-assets/main/thumbnails/polytrack.png",
     "description": "High-octane low-poly racing with tight controls and complex tracks."
   },
   {
@@ -109,6 +122,7 @@
     "developer": "Unknown",
     "genre": "Arcade",
     "url": "https://pizzaedition.win/assets/allgames/escaperoad/index.html",
+    "thumbnail": "https://raw.githubusercontent.com/3kh0/3kh0-assets/main/thumbnails/escape-road.png",
     "description": "Drive through traffic and evade capture in this fast-paced arcade racer."
   },
   {
@@ -117,6 +131,7 @@
     "developer": "Fancy Force",
     "genre": "Racing",
     "url": "https://db.duckmath.org/html/happy_wheels/index.html",
+    "thumbnail": "https://raw.githubusercontent.com/3kh0/3kh0-assets/main/thumbnails/happy-wheels.png",
     "description": "A gory physics-based racer where survival is rarely guaranteed."
   },
   {
@@ -125,6 +140,7 @@
     "developer": "Dedra Games",
     "genre": "Platformer",
     "url": "https://db.duckmath.org/html/ovo/index.html",
+    "thumbnail": "https://raw.githubusercontent.com/3kh0/3kh0-assets/main/thumbnails/ovo.png",
     "description": "A minimalist platformer focusing on momentum and precise parkour."
   },
   {
@@ -133,6 +149,7 @@
     "developer": "JustPlay.LOL",
     "genre": "Shooter",
     "url": "https://db.duckmath.org/html/1v1lol/index.html",
+    "thumbnail": "https://raw.githubusercontent.com/3kh0/3kh0-assets/main/thumbnails/1v1-lol.png",
     "description": "Build and battle in this competitive third-person shooter."
   },
   {
@@ -141,6 +158,7 @@
     "developer": "Aladdin X",
     "genre": "Puzzle",
     "url": "https://playsuikagame.com/",
+    "thumbnail": "https://raw.githubusercontent.com/3kh0/3kh0-assets/main/thumbnails/suika-game.png",
     "description": "Combine matching fruits to create the ultimate giant watermelon."
   },
   {
@@ -149,6 +167,7 @@
     "developer": "Splapp-me-do",
     "genre": "Puzzle",
     "url": "https://theimpossiblequiz-online.github.io/file/",
+    "thumbnail": "https://raw.githubusercontent.com/3kh0/3kh0-assets/main/thumbnails/the-impossible-quiz.png",
     "description": "Test your wits with abstract and nonsensical trivia questions."
   },
   {
@@ -157,6 +176,7 @@
     "developer": "Stephen Critoph",
     "genre": "Skill",
     "url": "https://dnrweqffuwjtx.cloudfront.net/games/2024/flash/worlds-hardest-game/index.html",
+    "thumbnail": "https://raw.githubusercontent.com/3kh0/3kh0-assets/main/thumbnails/worlds-hardest-game.png",
     "description": "Avoid blue dots and navigate through lethal mazes to reach the finish."
   },
   {
@@ -165,6 +185,7 @@
     "developer": "Halfbrick Studios",
     "genre": "Arcade",
     "url": "https://db.duckmath.org/html/jetpack_joyride/",
+    "thumbnail": "https://raw.githubusercontent.com/3kh0/3kh0-assets/main/thumbnails/jetpack-joyride.png",
     "description": "Suit up with a selection of the coolest jetpacks ever made and take to the skies as Barry Steakfries."
   },
   {
@@ -173,6 +194,7 @@
     "developer": "Oslo Albet",
     "genre": "Platformer",
     "url": "https://db2.duckmath.org/2023/construct/179/fire-and-water/pre.html",
+    "thumbnail": "https://raw.githubusercontent.com/3kh0/3kh0-assets/main/thumbnails/fireboy-and-watergirl.png",
     "description": "Control two elemental characters to solve puzzles and navigate through elemental temples."
   },
   {
@@ -181,6 +203,7 @@
     "developer": "Playpager",
     "genre": "Puzzle",
     "url": "https://playpager.com/embed/sudoku/index.html",
+    "thumbnail": "https://raw.githubusercontent.com/3kh0/3kh0-assets/main/thumbnails/sudoku.png",
     "description": "The classic logic-based number-placement puzzle."
   },
   {
@@ -189,6 +212,7 @@
     "developer": "FDG Entertainment",
     "genre": "Platformer",
     "url": "https://db.duckmath.org/html/redball_4/index.html",
+    "thumbnail": "https://raw.githubusercontent.com/3kh0/3kh0-assets/main/thumbnails/red-ball-4.png",
     "description": "Navigate through hazardous levels, defeat square minions, and save the world from being turned square."
   },
   {
@@ -197,6 +221,7 @@
     "developer": "Dong Nguyen",
     "genre": "Arcade",
     "url": "https://db.duckmath.org/html/flappy_bird/index.html",
+    "thumbnail": "https://raw.githubusercontent.com/3kh0/3kh0-assets/main/thumbnails/flappy-bird.png",
     "description": "Toss and flap your way through pipes in this notoriously difficult arcade sensation."
   },
   {
@@ -205,6 +230,7 @@
     "developer": "DX Interactive",
     "genre": "Puzzle",
     "url": "https://db.duckmath.org/html/bloxorz/index.html",
+    "thumbnail": "https://raw.githubusercontent.com/3kh0/3kh0-assets/main/thumbnails/bloxorz.png",
     "description": "Roll a rectangular block through a series of stages to reach the hole without falling off."
   },
   {
@@ -213,6 +239,7 @@
     "developer": "Recloak",
     "genre": "Puzzle",
     "url": "https://db.duckmath.org/html/little_alchemy_2/index.html",
+    "thumbnail": "https://raw.githubusercontent.com/3kh0/3kh0-assets/main/thumbnails/little-alchemy-2.png",
     "description": "Mix elements together to create new items and discover the secrets of the universe."
   },
   {
@@ -221,6 +248,7 @@
     "developer": "Lima Sky",
     "genre": "Arcade",
     "url": "https://db.duckmath.org/html/doodle_jump/index.html",
+    "thumbnail": "https://raw.githubusercontent.com/3kh0/3kh0-assets/main/thumbnails/doodle-jump.png",
     "description": "Jump from platform to platform and avoid monsters in this endless climber."
   },
   {
@@ -229,6 +257,7 @@
     "developer": "Namco",
     "genre": "Arcade",
     "url": "https://db.duckmath.org/html/pac_man/index.html",
+    "thumbnail": "https://raw.githubusercontent.com/3kh0/3kh0-assets/main/thumbnails/pac-man.png",
     "description": "Navigate Pac-Man through a maze, eating pellets and avoiding ghosts."
   },
   {
@@ -237,6 +266,7 @@
     "developer": "Original",
     "genre": "Platformer",
     "url": "https://db.duckmath.org/html/meat/index.html",
+    "thumbnail": "https://raw.githubusercontent.com/3kh0/3kh0-assets/main/thumbnails/super-meat-boy.png",
     "description": "A challenging platformer where precision is key."
   },
   {
@@ -245,6 +275,7 @@
     "developer": "Stephen Critoph",
     "genre": "Skill",
     "url": "https://db.duckmath.org/html/theworldshardestgame2/index.html",
+    "thumbnail": "https://raw.githubusercontent.com/3kh0/3kh0-assets/main/thumbnails/worlds-hardest-game-2.png",
     "description": "The sequel to the frustratingly difficult original, with even more complex puzzles."
   },
   {
@@ -253,6 +284,7 @@
     "developer": "Unknown",
     "genre": "Arcade",
     "url": "https://db2.duckmath.org/2026/em/famidash/index.html",
+    "thumbnail": "https://raw.githubusercontent.com/3kh0/3kh0-assets/main/thumbnails/famidash.png",
     "description": "High-speed arcade action with a retro feel."
   },
   {
@@ -261,6 +293,7 @@
     "developer": "Ninja Kiwi",
     "genre": "Tower Defense",
     "url": "https://db.duckmath.org/html/bloonstd/index.html",
+    "thumbnail": "https://raw.githubusercontent.com/3kh0/3kh0-assets/main/thumbnails/bloons-td.png",
     "description": "The original tower defense game where you pop bloons with monkeys and towers."
   },
   {
@@ -269,6 +302,7 @@
     "developer": "Ninja Kiwi",
     "genre": "Tower Defense",
     "url": "https://db.duckmath.org/html/bloonstd2/index.html",
+    "thumbnail": "https://raw.githubusercontent.com/3kh0/3kh0-assets/main/thumbnails/bloons-td-2.png",
     "description": "The sequel to the classic tower defense game with more maps and towers."
   },
   {
@@ -277,6 +311,7 @@
     "developer": "ClassiCube Team",
     "genre": "Sandbox",
     "url": "https://db2.duckmath.org/2024/cube/classicube/pre.html",
+    "thumbnail": "https://www.classicube.net/static/img/classicube-logo.png",
     "description": "A custom Minecraft Classic compatible client that allows for creative building."
   }
 ]
