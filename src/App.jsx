@@ -143,15 +143,26 @@ export default function App() {
     if (!url) return null;
     
     // Spotify
-    const spotifyMatch = url.match(/spotify\.com\/playlist\/([a-zA-Z0-9]+)/);
-    if (spotifyMatch) {
-      return `https://open.spotify.com/embed/playlist/${spotifyMatch[1]}`;
+    const spotifyPlaylistMatch = url.match(/spotify\.com\/playlist\/([a-zA-Z0-9]+)/);
+    if (spotifyPlaylistMatch) {
+      return `https://open.spotify.com/embed/playlist/${spotifyPlaylistMatch[1]}`;
     }
     
-    // YouTube / YouTube Music
-    const ytMatch = url.match(/[?&]list=([a-zA-Z0-9_-]+)/);
-    if (ytMatch) {
-      return `https://www.youtube.com/embed/videoseries?list=${ytMatch[1]}&autoplay=1`;
+    const spotifyTrackMatch = url.match(/spotify\.com\/track\/([a-zA-Z0-9]+)/);
+    if (spotifyTrackMatch) {
+      return `https://open.spotify.com/embed/track/${spotifyTrackMatch[1]}`;
+    }
+    
+    // YouTube / YouTube Music Playlist
+    const ytListMatch = url.match(/[?&]list=([a-zA-Z0-9_-]+)/);
+    if (ytListMatch) {
+      return `https://www.youtube.com/embed/videoseries?list=${ytListMatch[1]}&autoplay=1`;
+    }
+    
+    // YouTube / YouTube Music Individual Video
+    const ytVideoMatch = url.match(/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/);
+    if (ytVideoMatch) {
+      return `https://www.youtube.com/embed/${ytVideoMatch[1]}?autoplay=1&loop=1&playlist=${ytVideoMatch[1]}`;
     }
     
     return null;
@@ -851,7 +862,8 @@ export default function App() {
                       <Music size={12} className={t.text} /> Background Frequency (Spotify/YT)
                     </label>
                     <p className="text-[8px] font-mono text-slate-600 uppercase mb-3 leading-relaxed">
-                      Link a Spotify or YouTube Music playlist to stream audio in the background of your session.
+                      Link a Spotify or YouTube Music playlist to stream audio. 
+                      <span className="text-amber-500/80 block mt-1 font-black">Note: You may need to click "Play" on the widget in the bottom right corner due to browser autoplay policies.</span>
                     </p>
                     <div className="flex gap-2 mb-4">
                       <input 
@@ -2343,26 +2355,27 @@ export default function App() {
 
       {/* Background Audio Subspace */}
       {userProfile?.backgroundMusic?.url && userProfile?.backgroundMusic?.enabled !== false && (
-        <div className="fixed bottom-6 right-6 z-[9999] transition-all duration-500 transform hover:scale-105 group">
-          <div className={`p-1 bg-slate-900 border ${t.border} shadow-2xl backdrop-blur-md relative overflow-hidden`}>
+        <div className="fixed bottom-6 right-6 z-[9999] transition-all duration-500 group">
+          <div className={`p-1 bg-slate-900 border ${t.border} shadow-2xl backdrop-blur-md relative overflow-hidden transition-all duration-500 w-20 h-20 group-hover:w-80 group-hover:h-32`}>
              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-indigo-500 to-transparent animate-[pan_3s_linear_infinite]"></div>
              <iframe 
                src={getMusicEmbedUrl(userProfile.backgroundMusic.url)} 
-               width="80" 
-               height="80" 
+               width="100%" 
+               height="100%" 
                frameBorder="0" 
-               allowTransparency="true" 
-               allow="encrypted-media; autoplay" 
+               allowtransparency="true" 
+               allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
                className="rounded-sm shadow-inner"
                title="Background Audio Stream"
+               loading="lazy"
              />
              <div className="absolute -top-1 -right-1">
                <div className={`w-3 h-3 ${t.primary} rounded-full animate-pulse shadow-[0_0_10px_${t.accent}]`}></div>
              </div>
              
              {/* Interaction overlay to help identify what this is */}
-             <div className="absolute inset-x-0 bottom-0 py-0.5 bg-slate-950/80 text-[6px] font-mono text-center text-slate-500 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-               Audio Link Active
+             <div className="absolute inset-x-0 bottom-0 py-0.5 bg-slate-950/80 text-[6px] font-mono text-center text-slate-500 uppercase tracking-widest opacity-100 group-hover:opacity-0 transition-opacity pointer-events-none">
+               Audio Source
              </div>
           </div>
         </div>
